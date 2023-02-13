@@ -8,8 +8,8 @@ import (
 
 func response(w http.ResponseWriter, status int, body string) {
 	w.Header().Set("Content-Type", "text/plain")
-	w.Write([]byte(body))
 	w.WriteHeader(status)
+	w.Write([]byte(body))
 }
 
 func (h *Main) GetOneMetric(w http.ResponseWriter, r *http.Request) {
