@@ -11,7 +11,7 @@ func responseIndex(w http.ResponseWriter, body string) {
 	footer := "</ul></body></html>"
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Write([]byte(header + body + footer))
-	return
+	//return
 	//w.WriteHeader(status)
 }
 
@@ -30,6 +30,7 @@ func (h *Main) Index(w http.ResponseWriter, r *http.Request) {
 	if len(values) == 0 {
 		body = "<li><b>No metrics</b></li>"
 		responseIndex(w, body)
+		return
 	}
 
 	for key := range values {
