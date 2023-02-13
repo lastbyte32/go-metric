@@ -16,7 +16,7 @@ func UpdateHandle(gaugeStorage storage.GaugeStorage, counterStorage storage.Coun
 		urlPath := strings.Split(strings.TrimLeft(r.URL.Path, "update/"), "/")
 		if len(urlPath) != 3 {
 			fmt.Printf("parse err\n Count: %d\nParam: %v", len(urlPath), urlPath)
-			w.WriteHeader(http.StatusBadRequest)
+			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 
