@@ -19,8 +19,8 @@ func (h *Main) Update(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("case gauge")
 		valueGauge, err := strconv.ParseFloat(value, 64)
 		if err != nil {
-			w.Write([]byte("err parse value"))
 			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("err parse value"))
 			return
 		}
 		h.GaugeStorage.Update(name, valueGauge)
@@ -29,8 +29,8 @@ func (h *Main) Update(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("case counter")
 		valueCounter, err := strconv.ParseInt(value, 10, 64)
 		if err != nil {
-			w.Write([]byte("err parse value"))
 			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("err parse value"))
 			return
 		}
 		h.CountersStorage.Update(name, valueCounter)
