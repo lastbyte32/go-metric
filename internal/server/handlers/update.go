@@ -34,7 +34,10 @@ func (h *Main) Update(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		h.CountersStorage.Update(name, valueCounter)
-
+	default:
+		fmt.Println("invalid_type")
+		w.WriteHeader(http.StatusNotImplemented)
+		w.Write([]byte("err invalid_type"))
 	}
 
 }
