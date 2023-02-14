@@ -1,6 +1,6 @@
-[![autotests](https://github.com/lastbyte32/go-metric/actions/workflows/devopstest.yml/badge.svg?branch=iter3)](https://github.com/lastbyte32/go-metric/actions/workflows/devopstest.yml)
+[![autotests](https://github.com/lastbyte32/go-metric/actions/workflows/devopstest.yml/badge.svg?branch=iter1)](https://github.com/lastbyte32/go-metric/actions/workflows/devopstest.yml)
 
-[![go vet test](https://github.com/lastbyte32/go-metric/actions/workflows/statictest.yml/badge.svg?branch=iter3)](https://github.com/lastbyte32/go-metric/actions/workflows/statictest.yml)
+[![go vet test](https://github.com/lastbyte32/go-metric/actions/workflows/statictest.yml/badge.svg?branch=iter1)](https://github.com/lastbyte32/go-metric/actions/workflows/statictest.yml)
 
 # go-musthave-devops-tpl
 
