@@ -2,6 +2,9 @@
 
 [![go vet test](https://github.com/lastbyte32/go-metric/actions/workflows/statictest.yml/badge.svg?branch=iter3)](https://github.com/lastbyte32/go-metric/actions/workflows/statictest.yml)
 
+[![codecov](https://codecov.io/gh/lastbyte32/go-metric/branch/main/graph/badge.svg?token=JGW4NDIJR0)](https://codecov.io/gh/lastbyte32/go-metric)
+
+
 # go-musthave-devops-tpl
 
 
