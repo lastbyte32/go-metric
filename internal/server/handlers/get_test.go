@@ -49,7 +49,7 @@ func (s *CounterMockStorage) Update(name string, value int64) {
 
 }
 
-func TestGetHandle(t *testing.T) {
+func TestGetOneMetric(t *testing.T) {
 
 	const (
 		contentTypeOk = "text/plain"
