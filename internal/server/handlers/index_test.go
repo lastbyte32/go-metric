@@ -77,7 +77,6 @@ func TestIndexEmpty(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	handler := http.HandlerFunc(h.Index)
-
 	handler.ServeHTTP(w, req)
 
 	require.Equal(t, http.StatusOK, w.Code, fmt.Sprintf("handler returned wrong status code: got %v want %v", w.Code, http.StatusOK))
