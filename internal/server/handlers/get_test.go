@@ -68,6 +68,7 @@ func TestGetOneMetric(t *testing.T) {
 		countersStorage storage.CounterStorage
 		want            want
 	}{
+
 		{
 			name: "Counter get value OK",
 			req: func() *chi.Context {
@@ -113,6 +114,73 @@ func TestGetOneMetric(t *testing.T) {
 			},
 		},
 
+		{
+			name: "Metric Counter not found OK",
+			req: func() *chi.Context {
+				rctx := chi.NewRouteContext()
+				rctx.URLParams.Add("type", "counter")
+				rctx.URLParams.Add("name", "my_counter")
+				return rctx
+			}(),
+			gaugeStorage: new(GaugeMockStorage),
+
+			countersStorage: func() storage.CounterStorage {
+				r := new(CounterMockStorage)
+				r.On("Get", "my_counter").Return(int64(100), false)
+				return r
+			}(),
+
+			want: want{
+				code:        http.StatusNotFound,
+				contentType: contentTypeOk,
+				result:      "metric name: my_counter not found",
+			},
+		},
+
+		{
+			name: "Metric Gauge not found",
+			req: func() *chi.Context {
+				rctx := chi.NewRouteContext()
+				rctx.URLParams.Add("type", "gauge")
+				rctx.URLParams.Add("name", "my_gauge")
+				return rctx
+			}(),
+			gaugeStorage: func() storage.GaugeStorage {
+				r := new(GaugeMockStorage)
+				r.On("Get", "my_gauge").Return(float64(10000.1), false)
+				return r
+			}(),
+			countersStorage: new(CounterMockStorage),
+
+			want: want{
+				code:        http.StatusNotFound,
+				contentType: contentTypeOk,
+				result:      "metric name: my_gauge not found",
+			},
+		},
+
+		{
+			name: "Wrong metric type",
+			req: func() *chi.Context {
+				rctx := chi.NewRouteContext()
+				rctx.URLParams.Add("type", "test")
+				rctx.URLParams.Add("name", "my_counter")
+				return rctx
+			}(),
+			gaugeStorage: new(GaugeMockStorage),
+
+			countersStorage: func() storage.CounterStorage {
+				r := new(CounterMockStorage)
+				r.On("Get", "my_counter").Return(int64(100), false)
+				return r
+			}(),
+
+			want: want{
+				code:        http.StatusBadRequest,
+				contentType: contentTypeNo,
+				result:      "",
+			},
+		},
 		//{
 		//	name: "Gauge err value",
 		//	url:  "gauge/test/none",
