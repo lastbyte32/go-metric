@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -40,4 +41,20 @@ func TestPoolCounterWithNilPointer(t *testing.T) {
 	assert.Panics(t, func() {
 		poolCounter(counters, cnt)
 	}, "Expected panic, but it did not happen")
+}
+
+func TestGetParamGauge(t *testing.T) {
+	g := gauge{"test_gauge", 10.5}
+	param := g.getParam()
+
+	expectedParam := fmt.Sprintf("gauge/%s/%f", g.name, g.value)
+	assert.Equal(t, expectedParam, param, "Unexpected parameter for gauge")
+}
+
+func TestGetParamCounter(t *testing.T) {
+	c := counter{"test_counter", 42}
+	param := c.getParam()
+
+	expectedParam := fmt.Sprintf("counter/%s/%d", c.name, c.value)
+	assert.Equal(t, expectedParam, param, "Unexpected parameter for counter")
 }
