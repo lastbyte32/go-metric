@@ -45,10 +45,6 @@ func TestIndex(t *testing.T) {
 	require.Equal(t, http.StatusOK, w.Code, fmt.Sprintf("handler returned wrong status code: got %v want %v", w.Code, http.StatusOK))
 	require.Contains(t, w.Body.String(), "<title>Metrics</title>", "returned wrong body")
 
-	w = httptest.NewRecorder()
-
-	handler.ServeHTTP(w, req)
-
 	values := map[string]string{
 		"my_gauge":   "10000.100000",
 		"my_counter": "100",
@@ -56,5 +52,35 @@ func TestIndex(t *testing.T) {
 	for k, v := range values {
 		assert.Contains(t, w.Body.String(), fmt.Sprintf("<li><b>%s:</b> %s</li>", k, v), fmt.Sprintf("not fount %s = %s", k, v))
 	}
+
+}
+
+func TestIndexEmpty(t *testing.T) {
+	h := &Main{
+		GaugeStorage: func() storage.GaugeStorage {
+			r := new(GaugeMockStorage)
+			r.On("All").Return(map[string]float64{})
+
+			return r
+		}(),
+		CountersStorage: func() storage.CounterStorage {
+			r := new(CounterMockStorage)
+			r.On("All").Return(map[string]int64{})
+			return r
+		}(),
+	}
+
+	req, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	w := httptest.NewRecorder()
+	handler := http.HandlerFunc(h.Index)
+
+	handler.ServeHTTP(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code, fmt.Sprintf("handler returned wrong status code: got %v want %v", w.Code, http.StatusOK))
+	require.Contains(t, w.Body.String(), "<li><b>No metrics</b></li>", "returned wrong body")
 
 }
