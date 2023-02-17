@@ -64,7 +64,7 @@ func TestIndex(t *testing.T) {
 	require.Contains(t, w.Body.String(), "<title>Metrics</title>", "returned wrong body")
 
 	values := map[string]string{
-		"my_gauge":   "10000.100000",
+		"my_gauge":   "10000.100",
 		"my_counter": "100",
 	}
 	for k, v := range values {

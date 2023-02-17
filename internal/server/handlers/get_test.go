@@ -100,7 +100,7 @@ func TestGetMetric(t *testing.T) {
 			want: want{
 				code:        http.StatusOK,
 				contentType: contentTypeOk,
-				result:      "1.100000",
+				result:      "1.100",
 			},
 		},
 	}
