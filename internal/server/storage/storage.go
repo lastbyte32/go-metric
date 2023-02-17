@@ -71,6 +71,8 @@ func (m *memoryStorage) All() map[string]Metric {
 }
 
 func (m *memoryStorage) Update(name string, metric Metric) {
+
+	// TODO сделать метод потокобезопасным
 	// TODO: кмк тут слишком сложно,
 	// Возможно при записи метрики нужно проверять не отличается ли тип,
 	// если различается, то ругаться и не перезаписывать

@@ -20,6 +20,9 @@ func Run(config Configurator) error {
 		r.Get("/", handler.Index)
 		r.Get("/value/{type:gauge|counter}/{name}", handler.GetMetric)
 		r.Post("/update/{type:gauge|counter}/{name}/{value}", handler.UpdateMetric)
+
+		// autotest
+		r.Post("/update/{gauge|counter}/", router.NotFoundHandler())
 		r.Post("/update/*", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNotImplemented) })
 	})
 
