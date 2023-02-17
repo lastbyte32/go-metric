@@ -1,30 +1,28 @@
 package agent
 
 import (
-	"bytes"
-	"encoding/binary"
 	"fmt"
 	"math/rand"
 	"runtime"
-	"strconv"
+	"time"
 )
+
+type metric interface {
+	getURLUpdateParam() string
+	toString() string
+	sendReport(server string, timeout time.Duration) error
+}
 
 type gauge struct {
 	name  string
 	value float64
 }
 
-func (g gauge) getValue() []byte {
-
-	var buf bytes.Buffer
-	err := binary.Write(&buf, binary.LittleEndian, g.value)
-	if err != nil {
-		fmt.Println("binary.Write failed:", err)
-	}
-	return buf.Bytes()
+func (g gauge) toString() string {
+	return fmt.Sprintf("%f", g.value)
 }
 
-func (g gauge) getParam() string {
+func (g gauge) getURLUpdateParam() string {
 	return fmt.Sprintf("gauge/%s/%f", g.name, g.value)
 }
 
@@ -33,27 +31,45 @@ type counter struct {
 	value int64
 }
 
-func (c counter) getParam() string {
+func (c counter) toString() string {
+	return fmt.Sprintf("%d", c.value)
+}
+
+func (c counter) getURLUpdateParam() string {
 	return fmt.Sprintf("counter/%s/%d", c.name, c.value)
 }
 
-func (c counter) getValue() []byte {
-	return []byte(strconv.FormatInt(c.value, 10))
+func (c counter) sendReport(server string, timeout time.Duration) error {
+	url := "http://" + server + "/update/" + c.getURLUpdateParam()
+	err := transmitPlainText(url, c.toString(), timeout)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func poolCounter(counters *[]counter, cnt int64) {
-	fmt.Println("poolCounter")
+func (g gauge) sendReport(server string, timeout time.Duration) error {
+	url := "http://" + server + "/update/" + g.getURLUpdateParam()
+	err := transmitPlainText(url, g.toString(), timeout)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
-	*counters = []counter{
+func poolCounter(cnt int64) []counter {
+	fmt.Println("poolCounter")
+	return []counter{
 		{"PollCount", cnt},
 	}
 }
 
-func poolGauge(g *[]gauge) {
+func poolGauge() []gauge {
 	fmt.Println("poolGauge")
 	var memStats runtime.MemStats
 	runtime.ReadMemStats(&memStats)
-	*g = []gauge{
+
+	return []gauge{
 		{"RandomValue", rand.Float64()},
 		{"Alloc", float64(memStats.Alloc)},
 		{"BuckHashSys", float64(memStats.BuckHashSys)},

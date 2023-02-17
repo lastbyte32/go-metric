@@ -15,7 +15,6 @@ func (g *GaugeMemStorage) All() map[string]float64 {
 }
 
 func (g *GaugeMemStorage) Get(name string) (float64, bool) {
-	//panic("implement me")
 	value, exist := g.values[name]
 	return value, exist
 }

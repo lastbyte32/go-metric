@@ -1,60 +1,92 @@
 package agent
 
 import (
-	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func Test_poolGauge(t *testing.T) {
-	var testGauge []gauge
-	poolGauge(&testGauge)
+	gauges := poolGauge()
 
-	require.NotEmpty(t, testGauge, "Expected non-empty gauge list, but got empty")
-	// Проверяем, что каждый показатель имеет правильный формат
-	//for _, g := range testGauge {
-	//}
-}
+	require.NotEmpty(t, gauges, "Returned slice is empty")
+	assert.Equal(t, gauges[0].name, "RandomValue")
 
-func TestPoolGaugeWithNilPointer(t *testing.T) {
-	var g *[]gauge
-
-	assert.Panics(t, func() {
-		poolGauge(g)
-	}, "Expected panic, but it did not happen")
+	expectedGauges := []string{
+		"Alloc",
+		"BuckHashSys",
+		"Frees",
+		"GCCPUFraction",
+		"GCSys",
+		"HeapAlloc",
+		"HeapIdle",
+		"HeapInuse",
+		"HeapObjects",
+		"HeapReleased",
+		"HeapSys",
+		"LastGC",
+		"Lookups",
+		"MCacheInuse",
+		"MCacheSys",
+		"Mallocs",
+		"NextGC",
+		"NumForcedGC",
+		"NumGC",
+		"OtherSys",
+		"PauseTotalNs",
+		"RandomValue",
+		"StackInuse",
+		"StackSys",
+		"Sys",
+		"TotalAlloc",
+	}
+	for _, expected := range expectedGauges {
+		found := false
+		for _, g := range gauges {
+			if g.name == expected {
+				found = true
+				assert.IsType(t, g.value, float64(0), "wrong type")
+				break
+			}
+		}
+		assert.True(t, found, "Expected gauge %s not found", expected)
+	}
 }
 
 func TestPoolCounter(t *testing.T) {
-	var counters []counter
-	cnt := int64(5)
-
-	poolCounter(&counters, cnt)
-
-	assert.Len(t, counters, 1, "Unexpected number of counters")
+	counters := poolCounter(10)
+	require.NotEmpty(t, counters, "Unexpected output length")
+	assert.Equal(t, int64(10), counters[0].value, "Unexpected counter value")
 }
 
-func TestPoolCounterWithNilPointer(t *testing.T) {
-	var counters *[]counter
-	cnt := int64(5)
-
-	assert.Panics(t, func() {
-		poolCounter(counters, cnt)
-	}, "Expected panic, but it did not happen")
+func TestCounterToString(t *testing.T) {
+	c := counter{"TestCounter", 123}
+	assert.Equal(t, "123", c.toString(), "Unexpected string representation of counter")
 }
 
-func TestGetParamGauge(t *testing.T) {
-	g := gauge{"test_gauge", 10.5}
-	param := g.getParam()
-
-	expectedParam := fmt.Sprintf("gauge/%s/%f", g.name, g.value)
-	assert.Equal(t, expectedParam, param, "Unexpected parameter for gauge")
+func TestCounterGetURLUpdateParam(t *testing.T) {
+	c := counter{"TestCounter", 123}
+	assert.Equal(t, "counter/TestCounter/123", c.getURLUpdateParam(), "Unexpected URL parameter")
 }
 
-func TestGetParamCounter(t *testing.T) {
-	c := counter{"test_counter", 42}
-	param := c.getParam()
+func TestSendReportSuccess(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/update/counter/my_counter/42", r.URL.Path)
+		assert.Equal(t, "text/plain", r.Header.Get("Content-Type"))
+		body, err := io.ReadAll(r.Body)
+		assert.NoError(t, err)
+		assert.Equal(t, "42", string(body))
+		w.WriteHeader(http.StatusOK)
+	}))
 
-	expectedParam := fmt.Sprintf("counter/%s/%d", c.name, c.value)
-	assert.Equal(t, expectedParam, param, "Unexpected parameter for counter")
+	defer server.Close()
+
+	c := counter{name: "my_counter", value: 42}
+
+	err := c.sendReport(server.URL[7:], time.Second)
+	assert.NoError(t, err)
 }
