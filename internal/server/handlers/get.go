@@ -24,6 +24,7 @@ func (h *handler) GetMetric(w http.ResponseWriter, r *http.Request) {
 		metric, exist := h.metricsStorage.Get(name)
 		if !exist {
 			response(w, http.StatusNotFound, fmt.Sprintf("metric name: %s not found", name))
+			return
 		}
 		response(w, http.StatusOK, fmt.Sprintf("%v", metric.GetGauge()))
 		return
@@ -31,6 +32,7 @@ func (h *handler) GetMetric(w http.ResponseWriter, r *http.Request) {
 		metric, exist := h.metricsStorage.Get(name)
 		if exist {
 			response(w, http.StatusNotFound, fmt.Sprintf("metric name: %s not found", name))
+			return
 		}
 		response(w, http.StatusOK, fmt.Sprintf("%v", metric.GetCounter()))
 		return
