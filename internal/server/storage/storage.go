@@ -31,7 +31,7 @@ func (m *Metric) GetCounter() string {
 }
 
 func (m *Metric) GetName() string {
-	return fmt.Sprintf("%s", m.name)
+	return m.name
 }
 
 func (m *Metric) ToString() string {
@@ -60,7 +60,7 @@ type memoryStorage struct {
 
 func (m *memoryStorage) Get(name string) (Metric, bool) {
 	metric, ok := m.values[name]
-	if ok != true {
+	if !ok {
 		return Metric{}, false
 	}
 	return metric, true
@@ -79,7 +79,7 @@ func (m *memoryStorage) Update(name string, metric Metric) {
 		m.values[name] = metric
 	case COUNTER:
 		existMetric, ok := m.Get(name)
-		if ok == true {
+		if ok {
 			existMetric.counter += metric.counter
 			m.values[name] = existMetric
 		} else {
