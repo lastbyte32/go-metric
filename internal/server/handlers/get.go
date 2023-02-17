@@ -7,40 +7,31 @@ import (
 	"net/http"
 )
 
-func response(w http.ResponseWriter, status int, body string) {
-	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(status)
-	w.Write([]byte(body))
-}
-
 func (h *handler) GetMetric(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("GetMetric")
 
-	metric := chi.URLParam(r, "type")
 	name := chi.URLParam(r, "name")
+	found := false
+	value := ""
 
-	switch storage.MType(metric) {
+	switch storage.MType(chi.URLParam(r, "type")) {
 	case storage.GAUGE:
 		metric, exist := h.metricsStorage.Get(name)
-		if !exist {
-			response(w, http.StatusNotFound, fmt.Sprintf("metric name: %s not found", name))
-			return
+		if exist {
+			value = metric.GetGauge()
+			found = true
 		}
-		response(w, http.StatusOK, fmt.Sprintf("%v", metric.GetGauge()))
-		return
 	case storage.COUNTER:
 		metric, exist := h.metricsStorage.Get(name)
 		if exist {
-			response(w, http.StatusNotFound, fmt.Sprintf("metric name: %s not found", name))
-			return
+			value = metric.GetCounter()
+			found = true
 		}
-		response(w, http.StatusOK, fmt.Sprintf("%v", metric.GetCounter()))
-		return
-
-	default:
-		fmt.Printf("wrong metric type: %v\n", metric)
-		w.WriteHeader(http.StatusBadRequest)
-		return
 	}
 
+	w.Header().Set("Content-Type", "text/plain")
+	if !found {
+		w.WriteHeader(http.StatusNotFound)
+	}
+	w.Write([]byte(value))
 }
