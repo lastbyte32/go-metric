@@ -15,31 +15,28 @@ func responseIndex(w http.ResponseWriter, body string) {
 	//w.WriteHeader(status)
 }
 
-func (h *Main) Index(w http.ResponseWriter, r *http.Request) {
-	values := map[string]string{}
+func (h *handler) Index(w http.ResponseWriter, r *http.Request) {
+	//values := map[string]string{}
 	body := ""
-	var keys []string
 
-	for name, value := range h.GaugeStorage.All() {
-		values[name] = fmt.Sprintf("%f", value)
-	}
-	for name, value := range h.CountersStorage.All() {
-		values[name] = fmt.Sprintf("%d", value)
-	}
+	metrics := h.metricsStorage.All()
 
-	if len(values) == 0 {
+	if len(metrics) == 0 {
 		body = "<li><b>No metrics</b></li>"
 		responseIndex(w, body)
 		return
 	}
 
-	for key := range values {
+	var keys []string
+
+	for key := range metrics {
 		keys = append(keys, key)
 	}
 	sort.Strings(keys)
 
-	for _, val := range keys {
-		body += fmt.Sprintf("<li><b>%s:</b> %s</li>", val, values[val])
+	for _, k := range keys {
+		metric := metrics[k]
+		body += fmt.Sprintf("<li><b>%s:</b> %s</li>", metric.GetName(), metric.ToString())
 	}
 	responseIndex(w, body)
 }

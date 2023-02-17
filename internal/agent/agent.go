@@ -5,20 +5,17 @@ import (
 	"time"
 )
 
-func Run(config Configurator) error {
+func Run(config Configurator) {
 	fmt.Println("Agent start")
 	var (
 		pollCount = int64(0)
-
-		pollInterval   = config.getPollInterval()
-		reportInterval = config.getPollInterval()
 
 		counterMetrics []counter
 		gaugeMetrics   []gauge
 		allMetrics     []metric
 
-		reportTimer = time.NewTicker(reportInterval)
-		poolTimer   = time.NewTicker(pollInterval)
+		reportTimer = time.NewTicker(config.getReportInterval())
+		poolTimer   = time.NewTicker(config.getPollInterval())
 	)
 
 	defer func() {
@@ -33,6 +30,8 @@ func Run(config Configurator) error {
 			counterMetrics = poolCounter(pollCount)
 			gaugeMetrics = poolGauge()
 
+			allMetrics = nil
+
 			for _, c := range counterMetrics {
 				allMetrics = append(allMetrics, c)
 			}
@@ -45,7 +44,7 @@ func Run(config Configurator) error {
 			for _, m := range allMetrics {
 				err := m.sendReport(config.getAddress(), config.getReportTimeout())
 				if err != nil {
-					return fmt.Errorf("metric send err: %v", err)
+					fmt.Printf("metric send err: %v", err)
 				}
 			}
 		}

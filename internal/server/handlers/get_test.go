@@ -13,43 +13,23 @@ import (
 	"testing"
 )
 
-type GaugeMockStorage struct {
+type MockStorage struct {
 	mock.Mock
 }
 
-func (s *GaugeMockStorage) Get(name string) (float64, bool) {
-	rs := s.Called(name)
-	return rs.Get(0).(float64), rs.Bool(1)
+func (m *MockStorage) Get(name string) (storage.Metric, bool) {
+	rs := m.Called(name)
+	return rs.Get(0).(storage.Metric), rs.Bool(1)
 }
 
-func (s *GaugeMockStorage) All() map[string]float64 {
-	rs := s.Called()
-	return rs.Get(0).(map[string]float64)
+func (m *MockStorage) All() map[string]storage.Metric {
+	rs := m.Called()
+	return rs.Get(0).(map[string]storage.Metric)
 }
 
-func (s *GaugeMockStorage) Update(name string, value float64) {
+func (m *MockStorage) Update(string, storage.Metric) {}
 
-}
-
-type CounterMockStorage struct {
-	mock.Mock
-}
-
-func (s *CounterMockStorage) Get(name string) (int64, bool) {
-	rs := s.Called(name)
-	return rs.Get(0).(int64), rs.Bool(1)
-}
-
-func (s *CounterMockStorage) All() map[string]int64 {
-	rs := s.Called()
-	return rs.Get(0).(map[string]int64)
-}
-
-func (s *CounterMockStorage) Update(name string, value int64) {
-
-}
-
-func TestGetOneMetric(t *testing.T) {
+func TestGetMetric(t *testing.T) {
 
 	const (
 		contentTypeOk = "text/plain"
@@ -62,26 +42,30 @@ func TestGetOneMetric(t *testing.T) {
 		result      string
 	}
 	tests := []struct {
-		name            string
-		req             *chi.Context
-		gaugeStorage    storage.GaugeStorage
-		countersStorage storage.CounterStorage
-		want            want
+		name    string
+		req     *chi.Context
+		storage storage.Storage
+		want    want
 	}{
 
 		{
 			name: "Counter get value OK",
 			req: func() *chi.Context {
 				rctx := chi.NewRouteContext()
-				rctx.URLParams.Add("type", "counter")
+				rctx.URLParams.Add("type", string(storage.COUNTER))
 				rctx.URLParams.Add("name", "my_counter")
 				return rctx
 			}(),
-			gaugeStorage: new(GaugeMockStorage),
-
-			countersStorage: func() storage.CounterStorage {
-				r := new(CounterMockStorage)
-				r.On("Get", "my_counter").Return(int64(100), true)
+			storage: func() storage.Storage {
+				r := new(MockStorage)
+				r.On("Get", "my_counter").
+					Return(storage.NewMetric(
+						"test",
+						storage.COUNTER,
+						0,
+						100,
+					),
+						true)
 				return r
 			}(),
 
@@ -91,144 +75,45 @@ func TestGetOneMetric(t *testing.T) {
 				result:      "100",
 			},
 		},
+
 		{
 			name: "Gauge get value OK",
 			req: func() *chi.Context {
 				rctx := chi.NewRouteContext()
-				rctx.URLParams.Add("type", "gauge")
+				rctx.URLParams.Add("type", string(storage.GAUGE))
 				rctx.URLParams.Add("name", "my_gauge")
 				return rctx
 			}(),
-			gaugeStorage: func() storage.GaugeStorage {
-				r := new(GaugeMockStorage)
-				r.On("Get", "my_gauge").Return(float64(10000.1), true)
+			storage: func() storage.Storage {
+				r := new(MockStorage)
+				r.On("Get", "my_gauge").
+					Return(storage.NewMetric(
+						"my_gauge",
+						storage.GAUGE,
+						1.1,
+						0,
+					),
+						true)
 				return r
 			}(),
-
-			countersStorage: new(CounterMockStorage),
 
 			want: want{
 				code:        http.StatusOK,
 				contentType: contentTypeOk,
-				result:      "10000.1",
+				result:      "1.100000",
 			},
 		},
-
-		{
-			name: "Metric Counter not found OK",
-			req: func() *chi.Context {
-				rctx := chi.NewRouteContext()
-				rctx.URLParams.Add("type", "counter")
-				rctx.URLParams.Add("name", "my_counter")
-				return rctx
-			}(),
-			gaugeStorage: new(GaugeMockStorage),
-
-			countersStorage: func() storage.CounterStorage {
-				r := new(CounterMockStorage)
-				r.On("Get", "my_counter").Return(int64(100), false)
-				return r
-			}(),
-
-			want: want{
-				code:        http.StatusNotFound,
-				contentType: contentTypeOk,
-				result:      "metric name: my_counter not found",
-			},
-		},
-
-		{
-			name: "Metric Gauge not found",
-			req: func() *chi.Context {
-				rctx := chi.NewRouteContext()
-				rctx.URLParams.Add("type", "gauge")
-				rctx.URLParams.Add("name", "my_gauge")
-				return rctx
-			}(),
-			gaugeStorage: func() storage.GaugeStorage {
-				r := new(GaugeMockStorage)
-				r.On("Get", "my_gauge").Return(float64(10000.1), false)
-				return r
-			}(),
-			countersStorage: new(CounterMockStorage),
-
-			want: want{
-				code:        http.StatusNotFound,
-				contentType: contentTypeOk,
-				result:      "metric name: my_gauge not found",
-			},
-		},
-
-		{
-			name: "Wrong metric type",
-			req: func() *chi.Context {
-				rctx := chi.NewRouteContext()
-				rctx.URLParams.Add("type", "test")
-				rctx.URLParams.Add("name", "my_counter")
-				return rctx
-			}(),
-			gaugeStorage: new(GaugeMockStorage),
-
-			countersStorage: func() storage.CounterStorage {
-				r := new(CounterMockStorage)
-				r.On("Get", "my_counter").Return(int64(100), false)
-				return r
-			}(),
-
-			want: want{
-				code:        http.StatusBadRequest,
-				contentType: contentTypeNo,
-				result:      "",
-			},
-		},
-		//{
-		//	name: "Gauge err value",
-		//	url:  "gauge/test/none",
-		//	want: want{
-		//		code:        http.StatusBadRequest,
-		//		contentType: contentTypeNo,
-		//	},
-		//},
-		//
-		//{
-		//	name: "Counter OK",
-		//	url:  "counter/test/1",
-		//	want: want{
-		//		code:        http.StatusOK,
-		//		contentType: contentTypeOk,
-		//	},
-		//},
-		//{
-		//	name: "Gauge OK",
-		//	url:  "gauge/test/1",
-		//	want: want{
-		//		code:        http.StatusOK,
-		//		contentType: contentTypeOk,
-		//	},
-		//},
-		//
-		//{
-		//	name: "Metric type err",
-		//	url:  "test/test/1",
-		//	want: want{
-		//		code:        http.StatusNotImplemented,
-		//		contentType: contentTypeNo,
-		//	},
-		//},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			handler := &Main{
-				GaugeStorage:    tt.gaugeStorage,
-				CountersStorage: tt.countersStorage,
-			}
+			handler := NewHandler(tt.storage)
 
 			request := httptest.NewRequest(http.MethodGet, "/", nil)
 			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, tt.req))
 
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(handler.GetOneMetric)
+			h := http.HandlerFunc(handler.GetMetric)
 			h.ServeHTTP(w, request)
 			res := w.Result()
 			res.Body.Close()

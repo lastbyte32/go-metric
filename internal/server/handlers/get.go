@@ -12,25 +12,25 @@ func response(w http.ResponseWriter, status int, body string) {
 	w.Write([]byte(body))
 }
 
-func (h *Main) GetOneMetric(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("GetOneMetric")
+func (h *handler) GetMetric(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("GetMetric")
 
 	metric := chi.URLParam(r, "type")
 	name := chi.URLParam(r, "name")
 
 	switch metric {
 	case "gauge":
-		value, exist := h.GaugeStorage.Get(name)
+		metric, exist := h.metricsStorage.Get(name)
 		if exist {
-			response(w, http.StatusOK, fmt.Sprintf("%v", value))
+			response(w, http.StatusOK, fmt.Sprintf("%v", metric.GetGauge()))
 		} else {
 			response(w, http.StatusNotFound, fmt.Sprintf("metric name: %s not found", name))
 		}
 		return
 	case "counter":
-		value, exist := h.CountersStorage.Get(name)
+		metric, exist := h.metricsStorage.Get(name)
 		if exist {
-			response(w, http.StatusOK, fmt.Sprintf("%v", value))
+			response(w, http.StatusOK, fmt.Sprintf("%v", metric.GetCounter()))
 		} else {
 			response(w, http.StatusNotFound, fmt.Sprintf("metric name: %s not found", name))
 		}
