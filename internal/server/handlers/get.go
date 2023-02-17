@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"github.com/go-chi/chi"
+	"github.com/lastbyte32/go-metric/internal/server/storage"
 	"net/http"
 )
 
@@ -18,22 +19,22 @@ func (h *handler) GetMetric(w http.ResponseWriter, r *http.Request) {
 	metric := chi.URLParam(r, "type")
 	name := chi.URLParam(r, "name")
 
-	switch metric {
-	case "gauge":
+	switch storage.MType(metric) {
+	case storage.GAUGE:
 		metric, exist := h.metricsStorage.Get(name)
-		if exist {
-			response(w, http.StatusOK, fmt.Sprintf("%v", metric.GetGauge()))
-		} else {
+		if !exist {
 			response(w, http.StatusNotFound, fmt.Sprintf("metric name: %s not found", name))
 		}
+		response(w, http.StatusOK, fmt.Sprintf("%v", metric.GetGauge()))
 		return
-	case "counter":
+	case storage.COUNTER:
 		metric, exist := h.metricsStorage.Get(name)
 		if exist {
-			response(w, http.StatusOK, fmt.Sprintf("%v", metric.GetCounter()))
-		} else {
 			response(w, http.StatusNotFound, fmt.Sprintf("metric name: %s not found", name))
 		}
+		response(w, http.StatusOK, fmt.Sprintf("%v", metric.GetCounter()))
+		return
+
 	default:
 		fmt.Printf("wrong metric type: %v\n", metric)
 		w.WriteHeader(http.StatusBadRequest)

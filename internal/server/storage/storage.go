@@ -23,7 +23,7 @@ type Metric struct {
 }
 
 func (m *Metric) GetGauge() string {
-	return fmt.Sprintf("%f", m.gauge)
+	return fmt.Sprintf("%.3f", m.gauge)
 }
 
 func (m *Metric) GetCounter() string {
