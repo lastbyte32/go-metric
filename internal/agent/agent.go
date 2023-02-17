@@ -45,7 +45,7 @@ func Run(config Configurator) error {
 			for _, m := range allMetrics {
 				err := m.sendReport(config.getAddress(), config.getReportTimeout())
 				if err != nil {
-					return fmt.Errorf("Metric send err: %v", err)
+					return fmt.Errorf("metric send err: %v", err)
 				}
 			}
 		}
