@@ -1,7 +1,6 @@
 package agent
 
 import (
-	"errors"
 	"fmt"
 	"time"
 )
@@ -46,7 +45,7 @@ func Run(config Configurator) error {
 			for _, m := range allMetrics {
 				err := m.sendReport(config.getAddress(), config.getReportTimeout())
 				if err != nil {
-					return errors.New(fmt.Sprintf("Metric send err: %v", err))
+					return fmt.Errorf("Metric send err: %v", err)
 				}
 			}
 		}
