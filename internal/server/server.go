@@ -20,6 +20,7 @@ func Run(config Configurator) error {
 		r.Get("/", handler.Index)
 		r.Get("/value/{type:gauge|counter}/{name}", handler.GetMetric)
 		r.Post("/update/{type:gauge|counter}/{name}/{value}", handler.UpdateMetric)
+		r.Post("/update/*", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNotImplemented) })
 	})
 
 	srv := &http.Server{Addr: config.getAddress(), Handler: router}
