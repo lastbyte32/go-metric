@@ -1,6 +1,9 @@
 package storage
 
-import "fmt"
+import (
+	"fmt"
+	"sync"
+)
 
 type MType string
 
@@ -56,6 +59,7 @@ func NewMetric(name string, valueType MType, gauge float64, counter int64) Metri
 
 type memoryStorage struct {
 	values map[string]Metric
+	sync.Mutex
 }
 
 func (m *memoryStorage) Get(name string) (Metric, bool) {
@@ -71,8 +75,8 @@ func (m *memoryStorage) All() map[string]Metric {
 }
 
 func (m *memoryStorage) Update(name string, metric Metric) {
-
-	// TODO сделать метод потокобезопасным
+	m.Lock()
+	defer m.Unlock()
 	// TODO: кмк тут слишком сложно,
 	// Возможно при записи метрики нужно проверять не отличается ли тип,
 	// если различается, то ругаться и не перезаписывать
@@ -91,5 +95,5 @@ func (m *memoryStorage) Update(name string, metric Metric) {
 
 }
 func NewMemoryStorage() Storage {
-	return &memoryStorage{map[string]Metric{}}
+	return &memoryStorage{values: map[string]Metric{}}
 }
