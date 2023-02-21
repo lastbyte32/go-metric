@@ -11,15 +11,11 @@ func (h *handler) GetMetric(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("GetMetric")
 	mType := storage.MType(chi.URLParam(r, "type"))
 
-	if mType != storage.GAUGE {
+	if mType != storage.GAUGE || mType != storage.COUNTER {
 		w.WriteHeader(http.StatusNotImplemented)
 		return
 	}
 
-	if mType != storage.COUNTER {
-		w.WriteHeader(http.StatusNotImplemented)
-		return
-	}
 	metric, exist := h.metricsStorage.Get(chi.URLParam(r, "name"))
 
 	if !exist {
