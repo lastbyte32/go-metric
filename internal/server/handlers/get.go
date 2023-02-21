@@ -11,7 +11,7 @@ func (h *handler) GetMetric(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("GetMetric")
 	mType := storage.MType(chi.URLParam(r, "type"))
 
-	if mType != storage.GAUGE || mType != storage.COUNTER {
+	if mType != storage.COUNTER && mType != storage.GAUGE {
 		w.WriteHeader(http.StatusNotImplemented)
 		return
 	}
