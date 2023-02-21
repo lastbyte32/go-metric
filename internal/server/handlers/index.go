@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"strings"
 )
 
 func responseIndex(w http.ResponseWriter, body string) {
@@ -11,19 +12,14 @@ func responseIndex(w http.ResponseWriter, body string) {
 	footer := "</ul></body></html>"
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Write([]byte(header + body + footer))
-	//return
-	//w.WriteHeader(status)
 }
 
 func (h *handler) Index(w http.ResponseWriter, r *http.Request) {
-	//values := map[string]string{}
-	body := ""
-
+	var body strings.Builder
 	metrics := h.metricsStorage.All()
-
 	if len(metrics) == 0 {
-		body = "<li><b>No metrics</b></li>"
-		responseIndex(w, body)
+		body.WriteString("<li><b>No metrics</b></li>")
+		responseIndex(w, body.String())
 		return
 	}
 
@@ -36,7 +32,8 @@ func (h *handler) Index(w http.ResponseWriter, r *http.Request) {
 
 	for _, k := range keys {
 		metric := metrics[k]
-		body += fmt.Sprintf("<li><b>%s:</b> %s</li>", metric.GetName(), metric.ToString())
+		body.WriteString(fmt.Sprintf("<li><b>%s:</b> %s</li>", metric.GetName(), metric.ToString()))
+
 	}
-	responseIndex(w, body)
+	responseIndex(w, body.String())
 }
