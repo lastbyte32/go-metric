@@ -18,8 +18,8 @@ func (h *handler) GetMetric(w http.ResponseWriter, r *http.Request) {
 	metricName := chi.URLParam(r, "name")
 	m, exist := h.metricsStorage.Get(metricName, mType)
 	if !exist {
-		w.Write([]byte("metric not found"))
 		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("metric not found"))
 		return
 	}
 

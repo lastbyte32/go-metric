@@ -41,20 +41,6 @@ func (ms *memoryStorage) Get(name string, valueType metric.MType) (metric.Metric
 
 }
 
-func (ms *memoryStorage) All() map[string]metric.Metric {
-	ms.Lock()
-	defer ms.Unlock()
-	all := map[string]metric.Metric{}
-	for k, v := range ms.counter {
-		all[k] = v
-	}
-	for k, v := range ms.gauge {
-		all[k] = v
-	}
-
-	return all
-}
-
 func (ms *memoryStorage) Update(name, value string, valueType metric.MType) {
 	ms.Lock()
 	defer ms.Unlock()
@@ -68,9 +54,9 @@ func (ms *memoryStorage) Update(name, value string, valueType metric.MType) {
 		}
 		ms.gauge[name] = metric.NewGauge(name, f)
 	case metric.COUNTER:
-		s, err := strconv.ParseInt(value, 64, 64)
+		s, err := strconv.ParseInt(value, 10, 64)
 		if err != nil {
-			fmt.Println("COUNTER err paese")
+			fmt.Println("COUNTER err parse")
 			return
 		}
 
@@ -81,6 +67,20 @@ func (ms *memoryStorage) Update(name, value string, valueType metric.MType) {
 		}
 		ms.counter[name] = metric.NewCounter(name, s)
 	}
+}
+
+func (ms *memoryStorage) All() map[string]metric.Metric {
+	ms.Lock()
+	defer ms.Unlock()
+	all := map[string]metric.Metric{}
+	for k, v := range ms.counter {
+		all[k] = v
+	}
+	for k, v := range ms.gauge {
+		all[k] = v
+	}
+
+	return all
 }
 func NewMemoryStorage() Storage {
 	return &memoryStorage{
