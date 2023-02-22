@@ -21,6 +21,7 @@ func (c *counter) ToString() string {
 }
 
 func (c *counter) Increase(value int64) {
+	fmt.Println("Increase")
 	c.value += value
 }
 

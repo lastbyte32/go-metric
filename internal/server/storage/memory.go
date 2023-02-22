@@ -61,22 +61,26 @@ func (ms *memoryStorage) Update(name, value string, valueType metric.MType) {
 
 	switch valueType {
 	case metric.GAUGE:
-		if f, err := strconv.ParseFloat(value, 64); err == nil {
-			fmt.Println("GAUGE update")
-			ms.gauge[name] = metric.NewGauge(name, f)
-		} else {
+		f, err := strconv.ParseFloat(value, 64)
+		if err != nil {
 			fmt.Println("GAUGE err parse")
+			return
 		}
+		ms.gauge[name] = metric.NewGauge(name, f)
 	case metric.COUNTER:
+		s, err := strconv.ParseInt(value, 64, 64)
+		if err != nil {
+			fmt.Println("COUNTER err paese")
+			return
+		}
+
 		existMetric, ok := ms.counter[name]
 		if ok {
-			s, err := strconv.ParseInt(value, 10, 64)
-			if err == nil {
-				existMetric.Increase(s)
-			}
+			existMetric.Increase(s)
+			return
 		}
+		ms.counter[name] = metric.NewCounter(name, s)
 	}
-
 }
 func NewMemoryStorage() Storage {
 	return &memoryStorage{
