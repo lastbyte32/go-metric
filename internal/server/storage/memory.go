@@ -19,9 +19,9 @@ func (ms *memoryStorage) Get(name string, valueType metric.MType) (metric.Metric
 
 	switch valueType {
 	case metric.GAUGE:
-		fmt.Println("Get GAUGE")
 		m, ok := ms.gauge[name]
 		if ok {
+			fmt.Printf("Get GAUGE [%s]: OK", name)
 			return m, true
 		}
 		fmt.Printf("Get GAUGE [%s]: not found", name)
@@ -30,6 +30,7 @@ func (ms *memoryStorage) Get(name string, valueType metric.MType) (metric.Metric
 	case metric.COUNTER:
 		m, ok := ms.counter[name]
 		if ok {
+			fmt.Printf("Get COUNTER [%s]: OK", name)
 			return m, true
 		}
 		fmt.Printf("Get COUNTER [%s]: not found", name)
