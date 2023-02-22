@@ -18,7 +18,7 @@ func Run(config Configurator) error {
 	router.Use(middleware.Logger, middleware.Recoverer)
 	router.Group(func(r chi.Router) {
 		r.Get("/", handler.Index)
-		r.Get("/value/{type:gauge|counter}/{name}", handler.GetMetric)
+		r.Get("/value/{type}/{name}", handler.GetMetric)
 		r.Post("/update/{type}/{name}/{value}", handler.UpdateMetric)
 	})
 

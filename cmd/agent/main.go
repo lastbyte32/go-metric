@@ -5,5 +5,5 @@ import (
 )
 
 func main() {
-	agent.Run(agent.NewConfig())
+	agent.NewAgent(agent.NewConfig()).Run()
 }
