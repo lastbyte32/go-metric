@@ -8,10 +8,13 @@ import (
 )
 
 func responseIndex(w http.ResponseWriter, body string) {
-	header := "<html><head><title>Metrics</title></head><body><ul>"
-	footer := "</ul></body></html>"
+	var response strings.Builder
+	response.WriteString("<html><head><title>Metrics</title></head><body><ul>")
+	response.WriteString(body)
+	response.WriteString("</ul></body></html>")
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(header + body + footer))
+	w.Write([]byte(response.String()))
 }
 
 func (h *handler) Index(w http.ResponseWriter, r *http.Request) {
