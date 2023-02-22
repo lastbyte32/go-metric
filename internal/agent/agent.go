@@ -21,7 +21,7 @@ type agent struct {
 func NewAgent(c Configurator) *agent {
 	return &agent{
 		reportTimer: time.NewTicker(c.getReportInterval()),
-		poolTimer:   time.NewTicker(c.getReportInterval()),
+		poolTimer:   time.NewTicker(c.getPollInterval()),
 		pollCount:   int64(0),
 		metrics:     map[string]metric.Metric{},
 		client:      resty.New().SetTimeout(c.getReportTimeout()),
@@ -43,7 +43,7 @@ func (a *agent) transmitPlainText(m metric.Metric) error {
 }
 
 func (a *agent) sendReport() {
-	fmt.Println("reportTimer")
+	fmt.Println("sendReport")
 	for _, m := range a.metrics {
 		err := a.transmitPlainText(m)
 		if err != nil {
