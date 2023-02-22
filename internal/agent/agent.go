@@ -9,23 +9,19 @@ import (
 )
 
 type agent struct {
-	reportTimer *time.Ticker
-	poolTimer   *time.Ticker
-	pollCount   int64
-	metrics     map[string]metric.Metric
-	client      *resty.Client
-	config      Configurator
+	pollCount int64
+	metrics   map[string]metric.Metric
+	client    *resty.Client
+	config    Configurator
 	sync.Mutex
 }
 
 func NewAgent(c Configurator) *agent {
 	return &agent{
-		reportTimer: time.NewTicker(c.getReportInterval()),
-		poolTimer:   time.NewTicker(c.getPollInterval()),
-		pollCount:   int64(0),
-		metrics:     map[string]metric.Metric{},
-		client:      resty.New().SetTimeout(c.getReportTimeout()),
-		config:      c,
+		pollCount: int64(0),
+		metrics:   map[string]metric.Metric{},
+		client:    resty.New().SetTimeout(c.getReportTimeout()),
+		config:    c,
 	}
 }
 
@@ -66,17 +62,19 @@ func (a *agent) Pool() {
 
 func (a *agent) Run() {
 	fmt.Println("Agent start")
+	reportTimer := time.NewTicker(a.config.getReportInterval())
+	poolTimer := time.NewTicker(a.config.getPollInterval())
 
 	defer func() {
-		a.poolTimer.Stop()
-		a.reportTimer.Stop()
+		poolTimer.Stop()
+		reportTimer.Stop()
 	}()
 
 	for {
 		select {
-		case <-a.poolTimer.C:
+		case <-poolTimer.C:
 			a.Pool()
-		case <-a.reportTimer.C:
+		case <-reportTimer.C:
 			a.sendReport()
 		}
 	}

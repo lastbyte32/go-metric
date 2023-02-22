@@ -3,20 +3,20 @@ package handlers
 import (
 	"fmt"
 	"github.com/go-chi/chi"
-	"github.com/lastbyte32/go-metric/internal/server/storage"
+	"github.com/lastbyte32/go-metric/internal/metric"
 	"net/http"
 )
 
 func (h *handler) GetMetric(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("GetMetric")
-	mType := storage.MType(chi.URLParam(r, "type"))
+	mType := metric.MType(chi.URLParam(r, "type"))
 
-	if mType != storage.COUNTER && mType != storage.GAUGE {
+	if mType != metric.COUNTER && mType != metric.GAUGE {
 		w.WriteHeader(http.StatusNotImplemented)
 		return
 	}
 
-	metric, exist := h.metricsStorage.Get(chi.URLParam(r, "name"))
+	m, exist := h.metricsStorage.Get(chi.URLParam(r, "name"), mType)
 
 	if !exist {
 		w.WriteHeader(http.StatusNotFound)
@@ -25,5 +25,5 @@ func (h *handler) GetMetric(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/plain")
 
-	w.Write([]byte(metric.ToString()))
+	w.Write([]byte(m.ToString()))
 }
