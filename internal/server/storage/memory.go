@@ -32,7 +32,7 @@ func (ms *memoryStorage) Update(name, value string, metricType metric.MType) err
 	m, found := ms.Get(name)
 	if !found {
 		fmt.Println("create new metric")
-		err, newMetric := metric.NewByString(name, value, metricType)
+		newMetric, err := metric.NewByString(name, value, metricType)
 		if err != nil {
 			return err
 		}

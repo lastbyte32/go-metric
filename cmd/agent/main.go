@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	err, config := agent.NewConfig()
+	config, err := agent.NewConfig()
 	if err != nil {
 		log.Fatal(err.Error())
 	}

@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	err, config := server.NewConfig()
+	config, err := server.NewConfig()
 	if err != nil {
 		log.Fatal(err.Error())
 	}

@@ -24,7 +24,7 @@ func (g *gauge) ToString() string {
 }
 
 func (g *gauge) SetValue(value string) error {
-	err, f := utils.StringToFloat64(value)
+	f, err := utils.StringToFloat64(value)
 	if err != nil {
 		return err
 	}

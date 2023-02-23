@@ -22,10 +22,10 @@ func (c *config) defaultConfigParam() {
 	c.address = address
 }
 
-func NewConfig() (error, *config) {
+func NewConfig() (*config, error) {
 	//Todo: Реализовать загрузку "конфига" из файла/флагов/окружения
 	c := &config{}
 	c.defaultConfigParam()
 	fmt.Printf("*Configuration used*\n\t- Address: %s\n", c.address)
-	return nil, c
+	return c, nil
 }

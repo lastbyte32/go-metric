@@ -5,20 +5,20 @@ import (
 	"strconv"
 )
 
-func StringToFloat64(value string) (error, float64) {
+func StringToFloat64(value string) (float64, error) {
 	f, err := strconv.ParseFloat(value, 64)
 	if err != nil {
 		fmt.Println("StringToFloat64 err parse")
-		return err, float64(0)
+		return float64(0), nil
 	}
-	return nil, f
+	return f, nil
 }
 
-func StringToInt64(value string) (error, int64) {
+func StringToInt64(value string) (int64, error) {
 	f, err := strconv.ParseInt(value, 10, 64)
 	if err != nil {
 		fmt.Println("StringToInt64 err parse")
-		return err, int64(0)
+		return int64(0), err
 	}
-	return nil, f
+	return f, nil
 }

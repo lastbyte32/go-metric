@@ -29,7 +29,7 @@ func Run(config Configurator) error {
 
 	err := srv.ListenAndServe()
 	if errors.Is(err, http.ErrServerClosed) {
-		return errors.New("server closed\n")
+		return errors.New("server closed")
 	} else if err != nil {
 		return err
 	}

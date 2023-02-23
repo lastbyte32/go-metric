@@ -19,23 +19,23 @@ type Metric interface {
 	SetValue(value string) error
 }
 
-func NewByString(name string, value string, metricType MType) (error, Metric) {
+func NewByString(name string, value string, metricType MType) (Metric, error) {
 	switch metricType {
 
 	case GAUGE:
-		err, f := utils.StringToFloat64(value)
+		f, err := utils.StringToFloat64(value)
 		if err != nil {
-			return err, nil
+			return nil, err
 		}
-		return nil, &gauge{name: name, valueType: GAUGE, value: f}
+		return &gauge{name: name, valueType: GAUGE, value: f}, nil
 	case COUNTER:
-		err, f := utils.StringToInt64(value)
+		f, err := utils.StringToInt64(value)
 		if err != nil {
-			return err, nil
+			return nil, err
 		}
-		return nil, &counter{name: name, valueType: COUNTER, value: f}
+		return &counter{name: name, valueType: COUNTER, value: f}, nil
 
 	default:
-		return errors.New("wrong metric type"), nil
+		return nil, errors.New("wrong metric type")
 	}
 }

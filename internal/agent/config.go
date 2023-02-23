@@ -48,10 +48,10 @@ func (c *config) defaultConfigParam() {
 	c.pollInterval = time.Second * pollInterval
 }
 
-func NewConfig() (error, *config) {
+func NewConfig() (*config, error) {
 	//Todo: Реализовать загрузку "конфига" из файла/флагов/окружения
 	c := &config{}
 	c.defaultConfigParam()
 	fmt.Printf("*Configuration used*\n\t- Server: %s\n\t- ReportInterval: %.0fs\n\t- PollInterval: %.0fs\n", c.address, c.reportInterval.Seconds(), c.pollInterval.Seconds())
-	return nil, c
+	return c, nil
 }
