@@ -9,7 +9,7 @@ func StringToFloat64(value string) (float64, error) {
 	f, err := strconv.ParseFloat(value, 64)
 	if err != nil {
 		fmt.Println("StringToFloat64 err parse")
-		return float64(0), nil
+		return float64(0), err
 	}
 	return f, nil
 }
