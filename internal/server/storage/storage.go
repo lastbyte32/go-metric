@@ -5,7 +5,7 @@ import (
 )
 
 type Storage interface {
-	Get(string, metric.MType) (metric.Metric, bool)
+	Get(name string) (metric.Metric, bool)
 	All() map[string]metric.Metric
-	Update(string, string, metric.MType)
+	Update(name string, value string, metricType metric.MType) error
 }

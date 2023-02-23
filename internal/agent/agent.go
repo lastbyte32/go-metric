@@ -16,12 +16,16 @@ type agent struct {
 	sync.Mutex
 }
 
-func NewAgent(c Configurator) *agent {
+func NewAgent(config Configurator) *agent {
+	metrics := make(map[string]metric.Metric)
+	poolCount := int64(0)
+	client := resty.New().
+		SetTimeout(config.getReportTimeout())
 	return &agent{
-		pollCount: int64(0),
-		metrics:   map[string]metric.Metric{},
-		client:    resty.New().SetTimeout(c.getReportTimeout()),
-		config:    c,
+		pollCount: poolCount,
+		metrics:   metrics,
+		client:    client,
+		config:    config,
 	}
 }
 
@@ -57,6 +61,7 @@ func (a *agent) Pool() {
 		a.metrics[n] = metric.NewGauge(n, v)
 	}
 	a.pollCount++
+
 	a.metrics["PollCount"] = metric.NewCounter("PollCount", a.pollCount)
 }
 

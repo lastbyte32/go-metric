@@ -1,6 +1,9 @@
 package metric
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/lastbyte32/go-metric/internal/utils"
+)
 
 type counter struct {
 	name      string
@@ -20,11 +23,21 @@ func (c *counter) ToString() string {
 	return fmt.Sprintf("%d", c.value)
 }
 
-func (c *counter) Increase(value int64) {
+func (c *counter) SetValue(value string) error {
 	fmt.Println("Increase")
-	c.value += value
+	err, s := utils.StringToInt64(value)
+	if err != nil {
+		fmt.Println("COUNTER err parse")
+		return err
+	}
+	c.value += s
+	return nil
 }
 
 func NewCounter(name string, value int64) Metric {
-	return &counter{name: name, valueType: COUNTER, value: value}
+	return &counter{
+		name,
+		COUNTER,
+		value,
+	}
 }

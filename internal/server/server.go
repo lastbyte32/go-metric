@@ -11,9 +11,9 @@ import (
 )
 
 func Run(config Configurator) error {
+	ms := storage.NewMemoryStorage()
 
-	handler := handlers.NewHandler(storage.NewMemoryStorage())
-
+	handler := handlers.NewHandler(ms)
 	router := chi.NewRouter()
 	router.Use(middleware.Logger, middleware.Recoverer)
 	router.Group(func(r chi.Router) {
@@ -22,11 +22,18 @@ func Run(config Configurator) error {
 		r.Post("/update/{type}/{name}/{value}", handler.UpdateMetric)
 	})
 
-	srv := &http.Server{Addr: config.getAddress(), Handler: router}
-
-	if err := srv.ListenAndServe(); err != nil && errors.Is(err, http.ErrServerClosed) {
-		return fmt.Errorf("server error: %v", err)
+	srv := &http.Server{
+		Addr:    config.getAddress(),
+		Handler: router,
 	}
+
+	err := srv.ListenAndServe()
+	if errors.Is(err, http.ErrServerClosed) {
+		return errors.New("server closed\n")
+	} else if err != nil {
+		return err
+	}
+
 	fmt.Println("Server listen on " + config.getAddress())
 	return nil
 }

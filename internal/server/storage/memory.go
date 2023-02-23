@@ -3,88 +3,61 @@ package storage
 import (
 	"fmt"
 	"github.com/lastbyte32/go-metric/internal/metric"
-	"strconv"
 	"sync"
 )
 
 type memoryStorage struct {
-	counter map[string]metric.Metric
-	gauge   map[string]metric.Metric
+	values map[string]metric.Metric
 	sync.Mutex
 }
 
-func (ms *memoryStorage) Get(name string, valueType metric.MType) (metric.Metric, bool) {
+func (ms *memoryStorage) Get(name string) (metric.Metric, bool) {
+	fmt.Println("get metric")
 	ms.Lock()
 	defer ms.Unlock()
-
-	switch valueType {
-	case metric.GAUGE:
-		m, ok := ms.gauge[name]
-		if ok {
-			fmt.Printf("Get GAUGE [%s]: OK", name)
-			return m, true
-		}
-		fmt.Printf("Get GAUGE [%s]: not found", name)
-		return nil, false
-
-	case metric.COUNTER:
-		m, ok := ms.counter[name]
-		if ok {
-			fmt.Printf("Get COUNTER [%s]: OK", name)
-			return m, true
-		}
-		fmt.Printf("Get COUNTER [%s]: not found", name)
-		return nil, false
-	default:
-		return nil, false
+	m, ok := ms.values[name]
+	if ok {
+		fmt.Printf("Get metric [%s]: OK", name)
+		return m, true
 	}
-
+	fmt.Printf("Get metric [%s]: not found", name)
+	return nil, false
 }
 
-func (ms *memoryStorage) Update(name, value string, valueType metric.MType) {
-	ms.Lock()
+func (ms *memoryStorage) Update(name, value string, metricType metric.MType) error {
+	fmt.Println("ms->update")
+
 	defer ms.Unlock()
 
-	switch valueType {
-	case metric.GAUGE:
-		f, err := strconv.ParseFloat(value, 64)
+	m, found := ms.Get(name)
+	if !found {
+		fmt.Println("create new metric")
+		err, newMetric := metric.NewByString(name, value, metricType)
 		if err != nil {
-			fmt.Println("GAUGE err parse")
-			return
+			return err
 		}
-		ms.gauge[name] = metric.NewGauge(name, f)
-	case metric.COUNTER:
-		s, err := strconv.ParseInt(value, 10, 64)
-		if err != nil {
-			fmt.Println("COUNTER err parse")
-			return
-		}
-
-		existMetric, ok := ms.counter[name]
-		if ok {
-			existMetric.Increase(s)
-			return
-		}
-		ms.counter[name] = metric.NewCounter(name, s)
+		fmt.Println("update ok")
+		ms.Lock()
+		ms.values[name] = newMetric
+		return nil
 	}
+	ms.Lock()
+	err := m.SetValue(value)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (ms *memoryStorage) All() map[string]metric.Metric {
 	ms.Lock()
 	defer ms.Unlock()
-	all := map[string]metric.Metric{}
-	for k, v := range ms.counter {
-		all[k] = v
-	}
-	for k, v := range ms.gauge {
-		all[k] = v
-	}
-
-	return all
+	return ms.values
 }
+
 func NewMemoryStorage() Storage {
+	fmt.Println("new memory storage")
 	return &memoryStorage{
-		gauge:   map[string]metric.Metric{},
-		counter: map[string]metric.Metric{},
+		values: make(map[string]metric.Metric),
 	}
 }

@@ -27,7 +27,6 @@ func (h *handler) Index(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var keys []string
-
 	for key := range metrics {
 		keys = append(keys, key)
 	}

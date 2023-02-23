@@ -18,13 +18,14 @@ func (c *config) getAddress() string {
 }
 
 func (c *config) defaultConfigParam() {
-	c.address = ":8080"
+	const address = ":8080"
+	c.address = address
 }
 
-func NewConfig() *config {
+func NewConfig() (error, *config) {
 	//Todo: Реализовать загрузку "конфига" из файла/флагов/окружения
 	c := &config{}
 	c.defaultConfigParam()
 	fmt.Printf("*Configuration used*\n\t- Address: %s\n", c.address)
-	return c
+	return nil, c
 }

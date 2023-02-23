@@ -1,13 +1,11 @@
 package agent
 
 import (
-	"fmt"
 	"math/rand"
 	"runtime"
 )
 
 func getMemStat() map[string]float64 {
-	fmt.Println("getMemStat")
 	var memStats runtime.MemStats
 	runtime.ReadMemStats(&memStats)
 

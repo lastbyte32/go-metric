@@ -1,34 +1,41 @@
 package metric
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/lastbyte32/go-metric/internal/utils"
+)
 
-type Gauge struct {
+type gauge struct {
 	name      string
 	valueType MType
 	value     float64
 }
 
-func (g *Gauge) Increase(int642 int64) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (g *Gauge) GetName() string {
+func (g *gauge) GetName() string {
 	return g.name
 }
 
-func (g *Gauge) GetType() MType {
+func (g *gauge) GetType() MType {
 	return g.valueType
 }
 
-func (g *Gauge) ToString() string {
+func (g *gauge) ToString() string {
 	return fmt.Sprintf("%.3f", g.value)
 }
 
-func (g *Gauge) SetValue(value float64) {
-	g.value = value
+func (g *gauge) SetValue(value string) error {
+	err, f := utils.StringToFloat64(value)
+	if err != nil {
+		return err
+	}
+	g.value = f
+	return nil
 }
 
 func NewGauge(name string, value float64) Metric {
-	return &Gauge{name: name, valueType: GAUGE, value: value}
+	return &gauge{
+		name,
+		GAUGE,
+		value,
+	}
 }

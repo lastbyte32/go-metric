@@ -36,16 +36,22 @@ func (c *config) getPollInterval() time.Duration {
 }
 
 func (c *config) defaultConfigParam() {
-	c.address = "127.0.0.1:8080"
-	c.reportInterval = time.Second * 10
-	c.reportTimeout = time.Second * 20
-	c.pollInterval = time.Second * 2
+	const (
+		address        = "127.0.0.1:8080"
+		reportInterval = 10
+		pollInterval   = 2
+		reportTimeout  = 20
+	)
+	c.address = address
+	c.reportInterval = time.Second * reportInterval
+	c.reportTimeout = time.Second * reportTimeout
+	c.pollInterval = time.Second * pollInterval
 }
 
-func NewConfig() *config {
+func NewConfig() (error, *config) {
 	//Todo: Реализовать загрузку "конфига" из файла/флагов/окружения
 	c := &config{}
 	c.defaultConfigParam()
 	fmt.Printf("*Configuration used*\n\t- Server: %s\n\t- ReportInterval: %.0fs\n\t- PollInterval: %.0fs\n", c.address, c.reportInterval.Seconds(), c.pollInterval.Seconds())
-	return c
+	return nil, c
 }
