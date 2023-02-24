@@ -6,9 +6,8 @@ import (
 )
 
 type gauge struct {
-	name      string
-	valueType MType
-	value     float64
+	name  string
+	value float64
 }
 
 func (g *gauge) GetName() string {
@@ -16,7 +15,7 @@ func (g *gauge) GetName() string {
 }
 
 func (g *gauge) GetType() MType {
-	return g.valueType
+	return GAUGE
 }
 
 func (g *gauge) ToString() string {
@@ -35,7 +34,6 @@ func (g *gauge) SetValue(value string) error {
 func NewGauge(name string, value float64) Metric {
 	return &gauge{
 		name,
-		GAUGE,
 		value,
 	}
 }

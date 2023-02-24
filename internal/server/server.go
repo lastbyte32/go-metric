@@ -1,7 +1,6 @@
 package server
 
 import (
-	"errors"
 	"fmt"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -10,9 +9,12 @@ import (
 	"net/http"
 )
 
-func Run(config Configurator) error {
-	ms := storage.NewMemoryStorage()
+type server struct {
+	http *http.Server
+}
 
+func NewServer(config Configurator) *server {
+	ms := storage.NewMemoryStorage()
 	handler := handlers.NewHandler(ms)
 	router := chi.NewRouter()
 	router.Use(middleware.Logger, middleware.Recoverer)
@@ -26,14 +28,18 @@ func Run(config Configurator) error {
 		Addr:    config.getAddress(),
 		Handler: router,
 	}
+	return &server{
+		http: srv,
+	}
+}
 
-	err := srv.ListenAndServe()
-	if errors.Is(err, http.ErrServerClosed) {
-		return errors.New("server closed")
-	} else if err != nil {
+func (s *server) Run() error {
+
+	err := s.http.ListenAndServe()
+	if err != nil {
 		return err
 	}
 
-	fmt.Println("Server listen on " + config.getAddress())
+	fmt.Println("Server start")
 	return nil
 }

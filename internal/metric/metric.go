@@ -27,13 +27,13 @@ func NewByString(name string, value string, metricType MType) (Metric, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &gauge{name: name, valueType: GAUGE, value: f}, nil
+		return &gauge{name: name, value: f}, nil
 	case COUNTER:
 		f, err := utils.StringToInt64(value)
 		if err != nil {
 			return nil, err
 		}
-		return &counter{name: name, valueType: COUNTER, value: f}, nil
+		return &counter{name: name, value: f}, nil
 
 	default:
 		return nil, errors.New("NewByString: wrong metric type")
