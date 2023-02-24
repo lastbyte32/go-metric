@@ -24,7 +24,6 @@ func (c *counter) ToString() string {
 }
 
 func (c *counter) SetValue(value string) error {
-	fmt.Println("Increase")
 	s, err := utils.StringToInt64(value)
 	if err != nil {
 		fmt.Println("COUNTER err parse")
