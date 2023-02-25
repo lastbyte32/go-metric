@@ -5,7 +5,6 @@ import (
 	"github.com/go-resty/resty/v2"
 	"github.com/lastbyte32/go-metric/internal/metric"
 	"github.com/lastbyte32/go-metric/internal/storage"
-	"sync"
 	"time"
 )
 
@@ -13,7 +12,6 @@ type agent struct {
 	ms     storage.Storage
 	client *resty.Client
 	config Configurator
-	sync.Mutex
 }
 
 func NewAgent(config Configurator) *agent {
@@ -54,8 +52,7 @@ func (a *agent) sendReport() {
 func (a *agent) Pool() {
 	fmt.Println("Pool...")
 	memstat := getMemStat()
-	a.Lock()
-	defer a.Unlock()
+
 	for n, v := range memstat {
 		value := fmt.Sprintf("%.3f", v)
 		err := a.ms.Update(n, value, metric.GAUGE)
