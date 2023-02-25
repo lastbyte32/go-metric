@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"github.com/lastbyte32/go-metric/internal/server/storage"
+	"github.com/lastbyte32/go-metric/internal/storage"
 )
 
 type handler struct {
