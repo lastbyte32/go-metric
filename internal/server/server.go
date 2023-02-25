@@ -6,7 +6,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/lastbyte32/go-metric/internal/server/handlers"
-	"github.com/lastbyte32/go-metric/internal/storage"
+	"github.com/lastbyte32/go-metric/internal/server/storage"
 	"net/http"
 )
 
