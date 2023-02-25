@@ -36,6 +36,6 @@ func NewByString(name string, value string, metricType MType) (Metric, error) {
 		return &counter{name: name, value: f}, nil
 
 	default:
-		return nil, errors.New("wrong metric type")
+		return nil, errors.New("NewByString: wrong metric type")
 	}
 }
