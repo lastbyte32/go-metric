@@ -44,7 +44,7 @@ func TestNewByString_WrongMetricType(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Nil(t, metric)
-	assert.Equal(t, errors.New("wrong metric type"), err)
+	assert.Equal(t, errors.New("NewByString: wrong metric type"), err)
 }
 
 func TestNewByString_InvalidValueForGauge(t *testing.T) {
