@@ -15,14 +15,15 @@ type agent struct {
 }
 
 func NewAgent(config Configurator) *agent {
-
+	metrics := make(map[string]metric.Metric)
+	poolCount := int64(0)
 	client := resty.New().
 		SetTimeout(config.getReportTimeout())
-	memory := storage.NewMemoryStorage()
 	return &agent{
-		client: client,
-		config: config,
-		ms:     memory,
+		pollCount: poolCount,
+		metrics:   metrics,
+		client:    client,
+		config:    config,
 	}
 }
 
@@ -41,10 +42,10 @@ func (a *agent) transmitPlainText(m metric.Metric) error {
 
 func (a *agent) sendReport() {
 	fmt.Println("sendReport")
-	for _, m := range a.ms.All() {
+	for _, m := range a.metrics {
 		err := a.transmitPlainText(m)
 		if err != nil {
-			fmt.Printf("err send [%s]: %v\n", m.GetName(), err)
+			fmt.Printf("metric send err: %v", err)
 		}
 	}
 }
@@ -54,17 +55,11 @@ func (a *agent) Pool() {
 	memstat := getMemStat()
 
 	for n, v := range memstat {
-		value := fmt.Sprintf("%.3f", v)
-		err := a.ms.Update(n, value, metric.GAUGE)
-		if err != nil {
-			fmt.Printf("err update %s", n)
-		}
+		a.metrics[n] = metric.NewGauge(n, v)
 	}
+	a.pollCount++
 
-	err := a.ms.Update("PollCount", "1", metric.COUNTER)
-	if err != nil {
-		fmt.Printf("err update %s", "PollCount")
-	}
+	a.metrics["PollCount"] = metric.NewCounter("PollCount", a.pollCount)
 }
 
 func (a *agent) Run() {

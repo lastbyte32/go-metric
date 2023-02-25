@@ -5,13 +5,6 @@ import (
 	"time"
 )
 
-const (
-	address        = "127.0.0.1:8080"
-	reportInterval = 10
-	pollInterval   = 2
-	reportTimeout  = 20
-)
-
 type Configurator interface {
 	getAddress() string
 	getReportInterval() time.Duration
@@ -43,13 +36,19 @@ func (c *config) getPollInterval() time.Duration {
 }
 
 func (c *config) defaultConfigParam() {
+	const (
+		address        = "127.0.0.1:8080"
+		reportInterval = 10
+		pollInterval   = 2
+		reportTimeout  = 20
+	)
 	c.address = address
 	c.reportInterval = time.Second * reportInterval
 	c.reportTimeout = time.Second * reportTimeout
 	c.pollInterval = time.Second * pollInterval
 }
 
-func NewConfig() (Configurator, error) {
+func NewConfig() (*config, error) {
 	//Todo: Реализовать загрузку "конфига" из файла/флагов/окружения
 	c := &config{}
 	c.defaultConfigParam()

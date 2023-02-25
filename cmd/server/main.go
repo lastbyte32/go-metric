@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/lastbyte32/go-metric/internal/server"
 	"log"
 )
@@ -10,9 +11,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	app := server.NewServer(config)
-	err = app.Run()
+	err = server.Run(config)
 	if err != nil {
-		log.Fatal(err.Error())
+		fmt.Printf("metric server err: %v", err)
 	}
 }

@@ -4,10 +4,6 @@ import (
 	"fmt"
 )
 
-//const (
-//	address = ":8080"
-//)
-
 // Configurator Todo: подумать на тем что бы в дальнейшем сделать
 type Configurator interface {
 	getAddress() string
@@ -22,10 +18,11 @@ func (c *config) getAddress() string {
 }
 
 func (c *config) defaultConfigParam() {
-	c.address = ":8080"
+	const address = ":8080"
+	c.address = address
 }
 
-func NewConfig() (Configurator, error) {
+func NewConfig() (*config, error) {
 	//Todo: Реализовать загрузку "конфига" из файла/флагов/окружения
 	c := &config{}
 	c.defaultConfigParam()
