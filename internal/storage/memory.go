@@ -26,6 +26,7 @@ func (ms *memoryStorage) Get(name string) (metric.Metric, bool) {
 
 func (ms *memoryStorage) Update(name, value string, metricType metric.MType) error {
 	fmt.Println("ms->update")
+
 	defer ms.Unlock()
 
 	m, found := ms.Get(name)
