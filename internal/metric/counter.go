@@ -1,6 +1,7 @@
 package metric
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/lastbyte32/go-metric/internal/utils"
 )
@@ -23,8 +24,13 @@ func (c *counter) ToString() string {
 	return fmt.Sprintf("%d", c.value)
 }
 
+func (c *counter) ToJson() ([]byte, error) {
+	m := Metrics{ID: c.name, MType: string(COUNTER), Delta: &c.value}
+	return json.Marshal(m)
+}
+
 func (c *counter) SetValue(value string) error {
-	fmt.Println("Increase")
+	//fmt.Println("Increase")
 	s, err := utils.StringToInt64(value)
 	if err != nil {
 		fmt.Println("COUNTER err parse")
@@ -34,7 +40,7 @@ func (c *counter) SetValue(value string) error {
 	return nil
 }
 
-func NewCounter(name string, value int64) Metric {
+func NewCounter(name string, value int64) IMetric {
 	return &counter{
 		name,
 		COUNTER,

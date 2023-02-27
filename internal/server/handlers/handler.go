@@ -5,10 +5,10 @@ import (
 )
 
 type handler struct {
-	metricsStorage storage.Storage
+	metricsStorage storage.IStorage
 }
 
-func NewHandler(storage storage.Storage) *handler {
+func NewHandler(storage storage.IStorage) *handler {
 	return &handler{
 		storage,
 	}

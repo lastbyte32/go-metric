@@ -9,7 +9,7 @@ import (
 )
 
 type agent struct {
-	ms     storage.Storage
+	ms     storage.IStorage
 	client *resty.Client
 	config Configurator
 }
@@ -26,7 +26,7 @@ func NewAgent(config Configurator) *agent {
 	}
 }
 
-func (a *agent) transmitPlainText(m metric.Metric) error {
+func (a *agent) transmitPlainText(m metric.IMetric) error {
 	url := fmt.Sprintf("http://%s/update/%s/%s/%s", a.config.getAddress(), m.GetType(), m.GetName(), m.ToString())
 
 	_, err := a.client.R().
@@ -39,10 +39,27 @@ func (a *agent) transmitPlainText(m metric.Metric) error {
 	return nil
 }
 
+func (a *agent) transmitJson(m metric.IMetric) error {
+	url := fmt.Sprintf("http://%s/update/", a.config.getAddress())
+	body, err := m.ToJson()
+	if err != nil {
+		return err
+	}
+	//fmt.Println(string(body))
+	_, err = a.client.R().
+		SetHeader("Content-Type", "application/json").
+		SetBody(body).
+		Post(url)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (a *agent) sendReport() {
-	fmt.Println("sendReport")
+	//fmt.Println("sendReport")
 	for _, m := range a.ms.All() {
-		err := a.transmitPlainText(m)
+		err := a.transmitJson(m)
 		if err != nil {
 			fmt.Printf("err send [%s]: %v\n", m.GetName(), err)
 		}
@@ -50,7 +67,7 @@ func (a *agent) sendReport() {
 }
 
 func (a *agent) Pool() {
-	fmt.Println("Pool...")
+	//fmt.Println("Pool...")
 	memstat := getMemStat()
 
 	for n, v := range memstat {
