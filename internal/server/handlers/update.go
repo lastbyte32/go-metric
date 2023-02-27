@@ -31,7 +31,7 @@ func (h *handler) UpdateMetricFromJSON(w http.ResponseWriter, r *http.Request) {
 		//fmt.Printf("Name: %s\nType: %s\nValue: %s\n", m.ID, m.MType, value)
 	case metric.GAUGE:
 		inputValue := *m.Value
-		value = fmt.Sprintf("%.10f", inputValue)
+		value = fmt.Sprintf("%f", inputValue)
 		//fmt.Printf("Name: %s\nType: %s\nValue: %s\n", m.ID, m.MType, value)
 	default:
 		fmt.Println("invalid_type")

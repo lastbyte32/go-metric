@@ -22,10 +22,8 @@ func NewServer(config Configurator) *server {
 		r.Get("/", handler.Index)
 		r.Get("/value/{type}/{name}", handler.GetMetric)
 		r.Post("/update/{type}/{name}/{value}", handler.UpdateMetric)
-
 		r.Post("/update/", handler.UpdateMetricFromJSON)
 		r.Post("/value/", handler.GetMetricFromJSON)
-
 	})
 
 	srv := &http.Server{
