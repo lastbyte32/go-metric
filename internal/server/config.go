@@ -2,33 +2,34 @@ package server
 
 import (
 	"fmt"
+	"github.com/caarlos0/env/v7"
 )
 
-const (
-	address = ":8080"
-)
-
-// Configurator Todo: подумать на тем что бы в дальнейшем сделать
 type Configurator interface {
 	getAddress() string
 }
 
 type config struct {
-	address string
+	Address string `env:"ADDRESS" envDefault:"127.0.0.1:8080"`
 }
 
 func (c *config) getAddress() string {
-	return c.address
+	return c.Address
 }
 
-func (c *config) defaultConfigParam() {
-	c.address = address
+func (c *config) env() error {
+	if err := env.Parse(c); err != nil {
+		return err
+	}
+	return nil
 }
 
 func NewConfig() (Configurator, error) {
-	//Todo: Реализовать загрузку "конфига" из файла/флагов/окружения
 	c := &config{}
-	c.defaultConfigParam()
-	fmt.Printf("*Configuration used*\n\t- Address: %s\n", c.address)
+	err := c.env()
+	if err != nil {
+		return nil, err
+	}
+	fmt.Printf("*Configuration used*\n\t- Address: %s\n", c.Address)
 	return c, nil
 }

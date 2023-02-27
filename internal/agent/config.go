@@ -2,57 +2,58 @@ package agent
 
 import (
 	"fmt"
+	"github.com/caarlos0/env/v7"
 	"time"
 )
 
-const (
-	address        = "127.0.0.1:8080"
-	reportInterval = 10
-	pollInterval   = 2
-	reportTimeout  = 20
-)
-
-type Configurator interface {
+type IConfigurator interface {
 	getAddress() string
 	getReportInterval() time.Duration
 	getReportTimeout() time.Duration
 	getPollInterval() time.Duration
 }
 
+// что бы воспользоваться библиотекой github.com/caarlos0/env/v7, пришлось сделать своиства экспортируемыми
 type config struct {
-	address        string
-	reportInterval time.Duration
-	reportTimeout  time.Duration
-	pollInterval   time.Duration
+	Address        string        `env:"ADDRESS" envDefault:"127.0.0.1:8080"`
+	ReportInterval time.Duration `env:"REPORT_INTERVAL" envDefault:"10s"`
+	ReportTimeout  time.Duration `env:"REPORT_TIMEOUT" envDefault:"20s"`
+	PollInterval   time.Duration `env:"POLL_INTERVAL" envDefault:"2s"`
 }
 
 func (c *config) getAddress() string {
-	return c.address
+	return c.Address
 }
 
 func (c *config) getReportInterval() time.Duration {
-	return c.reportInterval
+	return c.ReportInterval
 }
 
 func (c *config) getReportTimeout() time.Duration {
-	return c.reportTimeout
+	return c.ReportTimeout
 }
 
 func (c *config) getPollInterval() time.Duration {
-	return c.pollInterval
+	return c.PollInterval
 }
 
-func (c *config) defaultConfigParam() {
-	c.address = address
-	c.reportInterval = time.Second * reportInterval
-	c.reportTimeout = time.Second * reportTimeout
-	c.pollInterval = time.Second * pollInterval
+func (c *config) env() error {
+	if err := env.Parse(c); err != nil {
+		return err
+	}
+	return nil
 }
 
-func NewConfig() (Configurator, error) {
-	//Todo: Реализовать загрузку "конфига" из файла/флагов/окружения
+func NewConfig() (IConfigurator, error) {
 	c := &config{}
-	c.defaultConfigParam()
-	fmt.Printf("*Configuration used*\n\t- Server: %s\n\t- ReportInterval: %.0fs\n\t- PollInterval: %.0fs\n", c.address, c.reportInterval.Seconds(), c.pollInterval.Seconds())
+	err := c.env()
+	if err != nil {
+		return nil, err
+	}
+	fmt.Printf("*Configuration used*\n\t- Server: %s\n\t- ReportInterval: %.0fs\n\t- PollInterval: %.0fs\n",
+		c.Address,
+		c.ReportInterval.Seconds(),
+		c.PollInterval.Seconds(),
+	)
 	return c, nil
 }

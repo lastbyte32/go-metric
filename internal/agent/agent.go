@@ -11,10 +11,10 @@ import (
 type agent struct {
 	ms     storage.IStorage
 	client *resty.Client
-	config Configurator
+	config IConfigurator
 }
 
-func NewAgent(config Configurator) *agent {
+func NewAgent(config IConfigurator) *agent {
 
 	client := resty.New().
 		SetTimeout(config.getReportTimeout())
