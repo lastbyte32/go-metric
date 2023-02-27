@@ -24,7 +24,7 @@ func (g *gauge) ToString() string {
 	return fmt.Sprintf("%.3f", g.value)
 }
 
-func (g *gauge) ToJson() ([]byte, error) {
+func (g *gauge) ToJSON() ([]byte, error) {
 	m := Metrics{ID: g.name, MType: string(GAUGE), Value: &g.value}
 	return json.Marshal(m)
 }

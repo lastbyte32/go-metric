@@ -23,7 +23,7 @@ type IMetric interface {
 	GetName() string
 	GetType() MType
 	ToString() string
-	ToJson() ([]byte, error)
+	ToJSON() ([]byte, error)
 	SetValue(value string) error
 }
 

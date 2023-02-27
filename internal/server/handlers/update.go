@@ -8,7 +8,7 @@ import (
 	"net/http"
 )
 
-func (h *handler) JsonUpdateMetric(w http.ResponseWriter, r *http.Request) {
+func (h *handler) UpdateMetricFromJSON(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/jsonBody")
 
 	var m metric.Metrics
@@ -49,7 +49,7 @@ func (h *handler) JsonUpdateMetric(w http.ResponseWriter, r *http.Request) {
 
 	// тут пропускаем ошибку потому что выше проверили удачный ли апдейт
 	updatedMetric, _ := h.metricsStorage.Get(m.ID)
-	jsonBody, err := updatedMetric.ToJson()
+	jsonBody, err := updatedMetric.ToJSON()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(fmt.Sprintf(`{"error":"%s"}`, err)))

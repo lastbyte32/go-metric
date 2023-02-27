@@ -8,7 +8,7 @@ import (
 	"net/http"
 )
 
-func (h *handler) JsonGetMetric(w http.ResponseWriter, r *http.Request) {
+func (h *handler) GetMetricFromJSON(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var inputMetric metric.Metrics
@@ -30,7 +30,7 @@ func (h *handler) JsonGetMetric(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`{"error": "metric not found"}`))
 		return
 	}
-	json, err := metric.ToJson()
+	json, err := metric.ToJSON()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(fmt.Sprintf(`{"error":"%s"}`, err)))

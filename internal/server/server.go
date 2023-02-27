@@ -23,8 +23,8 @@ func NewServer(config Configurator) *server {
 		r.Get("/value/{type}/{name}", handler.GetMetric)
 		r.Post("/update/{type}/{name}/{value}", handler.UpdateMetric)
 
-		r.Post("/update/", handler.JsonUpdateMetric)
-		r.Post("/value/", handler.JsonGetMetric)
+		r.Post("/update/", handler.UpdateMetricFromJSON)
+		r.Post("/value/", handler.GetMetricFromJSON)
 
 	})
 

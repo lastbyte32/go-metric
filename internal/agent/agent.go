@@ -39,9 +39,9 @@ func (a *agent) transmitPlainText(m metric.IMetric) error {
 	return nil
 }
 
-func (a *agent) transmitJson(m metric.IMetric) error {
+func (a *agent) transmitJSON(m metric.IMetric) error {
 	url := fmt.Sprintf("http://%s/update/", a.config.getAddress())
-	body, err := m.ToJson()
+	body, err := m.ToJSON()
 	if err != nil {
 		return err
 	}
@@ -59,7 +59,7 @@ func (a *agent) transmitJson(m metric.IMetric) error {
 func (a *agent) sendReport() {
 	//fmt.Println("sendReport")
 	for _, m := range a.ms.All() {
-		err := a.transmitJson(m)
+		err := a.transmitJSON(m)
 		if err != nil {
 			fmt.Printf("err send [%s]: %v\n", m.GetName(), err)
 		}
