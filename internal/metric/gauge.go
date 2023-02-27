@@ -21,7 +21,7 @@ func (g *gauge) GetType() MType {
 }
 
 func (g *gauge) ToString() string {
-	return fmt.Sprintf("%.3f", g.value)
+	return fmt.Sprintf("%f", g.value)
 }
 
 func (g *gauge) ToJSON() ([]byte, error) {
