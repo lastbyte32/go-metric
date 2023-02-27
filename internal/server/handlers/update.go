@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/go-chi/chi"
 	"github.com/lastbyte32/go-metric/internal/metric"
+	"github.com/lastbyte32/go-metric/internal/utils"
 	"net/http"
 )
 
@@ -26,12 +27,10 @@ func (h *handler) UpdateMetricFromJSON(w http.ResponseWriter, r *http.Request) {
 	var value = ""
 	switch mtype {
 	case metric.COUNTER:
-		inputValue := *m.Delta
-		value = fmt.Sprintf("%d", inputValue)
+		value = fmt.Sprintf("%d", *m.Delta)
 		//fmt.Printf("Name: %s\nType: %s\nValue: %s\n", m.ID, m.MType, value)
 	case metric.GAUGE:
-		inputValue := *m.Value
-		value = fmt.Sprintf("%f", inputValue)
+		value = utils.FloatToString(*m.Value)
 		//fmt.Printf("Name: %s\nType: %s\nValue: %s\n", m.ID, m.MType, value)
 	default:
 		fmt.Println("invalid_type")

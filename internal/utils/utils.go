@@ -22,3 +22,7 @@ func StringToInt64(value string) (int64, error) {
 	}
 	return f, nil
 }
+
+func FloatToString(value float64) string {
+	return strconv.FormatFloat(value, 'f', -1, 64)
+}
