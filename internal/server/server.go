@@ -35,7 +35,12 @@ func NewServer(config Configurator, ctx context.Context) *server {
 
 	handler := handlers.NewHandler(ms)
 	router := chi.NewRouter()
-	router.Use(middleware.Logger, middleware.Recoverer)
+	router.Use(
+		middleware.Logger,
+		middleware.Compress(5),
+		middleware.Recoverer,
+	)
+
 	router.Group(func(r chi.Router) {
 		r.Get("/", handler.Index)
 		r.Get("/value/{type}/{name}", handler.GetMetric)
