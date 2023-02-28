@@ -1,6 +1,7 @@
 package server
 
 import (
+	"flag"
 	"fmt"
 	"github.com/caarlos0/env/v7"
 	"time"
@@ -13,11 +14,18 @@ type Configurator interface {
 	IsRestore() bool
 }
 
+const (
+	address       = "127.0.0.1:8080"
+	storeInterval = 300 * time.Second
+	storeFile     = "/tmp/devops-metrics-db.json"
+	restore       = true
+)
+
 type config struct {
-	Address       string        `env:"ADDRESS" envDefault:"127.0.0.1:8080"`
-	StoreInterval time.Duration `env:"STORE_INTERVAL" envDefault:"300s"`
-	StoreFile     string        `env:"STORE_FILE" envDefault:"/tmp/devops-metrics-db.json"`
-	Restore       bool          `env:"RESTORE" envDefault:"true"`
+	Address       string        `env:"ADDRESS"`
+	StoreInterval time.Duration `env:"STORE_INTERVAL"`
+	StoreFile     string        `env:"STORE_FILE"`
+	Restore       bool          `env:"RESTORE"`
 }
 
 func (c *config) getStoreFile() string {
@@ -43,8 +51,17 @@ func (c *config) env() error {
 	return nil
 }
 
+func (c *config) flags() {
+	flag.StringVar(&c.Address, "a", address, "server binding host:port")
+	flag.StringVar(&c.StoreFile, "f", storeFile, "store metrics in file")
+	flag.BoolVar(&c.Restore, "r", restore, "restore metrics")
+	flag.DurationVar(&c.StoreInterval, "i", storeInterval, "store metrics on interval")
+	flag.Parse()
+}
+
 func NewConfig() (Configurator, error) {
 	c := &config{}
+	c.flags()
 	err := c.env()
 	if err != nil {
 		return nil, err
