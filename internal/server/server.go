@@ -21,10 +21,10 @@ func NewServer(config Configurator, ctx context.Context) *server {
 
 	ms := storage.NewMemoryStorage(
 		storage.WithContext(ctx),
-		//storage.WithStore(config.getStoreFile(), config.getStoreInterval()),
-		//storage.WithRestore(config.getStoreFile(), config.IsRestore()),
+		storage.WithStore(config.getStoreFile(), config.getStoreInterval()),
+		storage.WithRestore(config.getStoreFile(), config.IsRestore()),
 
-		storage.WithStore("./devops-metrics-db.json", 0),
+		//storage.WithStore("./devops-metrics-db.json", 0),
 		//storage.WithRestore("./devops-metrics-db.json", config.IsRestore()),
 	)
 
