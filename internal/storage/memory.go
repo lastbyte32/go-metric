@@ -18,6 +18,7 @@ type memoryStorage struct {
 	storeInterval time.Duration
 	isRestore     bool
 	ctx           context.Context
+	eventChan     chan int
 	fileMutex     sync.Mutex
 	sync.Mutex
 }
@@ -37,6 +38,7 @@ func (ms *memoryStorage) Get(name string) (metric.IMetric, bool) {
 
 func (ms *memoryStorage) Update(name, value string, metricType metric.MType) error {
 	//fmt.Println("ms->update")
+	defer ms.eventSaved()
 
 	m, found := ms.Get(name)
 	if !found {
@@ -69,22 +71,48 @@ func (ms *memoryStorage) All() map[string]metric.IMetric {
 	return ms.values
 }
 
-func (ms *memoryStorage) storeWorker(interval time.Duration) {
-
-	ticker := time.NewTicker(interval)
-	fmt.Printf("store worker start, interval: %.0fs\n", interval.Seconds())
-
-	for {
-		select {
-		case <-ticker.C:
-			ms.storeOnFile()
-		case <-ms.ctx.Done():
-			ms.storeOnFile()
-			ticker.Stop()
-			fmt.Println("store worker stop")
-			return
-		}
+func (ms *memoryStorage) eventSaved() {
+	if ms.storeFile == "" {
+		return
 	}
+	if ms.storeInterval != 0 {
+		return
+	}
+	ms.eventChan <- 1
+}
+
+func (ms *memoryStorage) storeWorkerOnInterval(interval time.Duration) {
+	fmt.Printf("store worker start, interval: %.0fs\n", interval.Seconds())
+	go func() {
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				ms.storeOnFile()
+			case <-ms.ctx.Done():
+				ms.storeOnFile()
+				fmt.Println("store worker stop")
+				return
+			}
+		}
+	}()
+}
+
+func (ms *memoryStorage) storeWorkerOnUpdate() {
+	fmt.Println("storeWorkerOnUpdate start")
+	go func() {
+		for {
+			select {
+			case <-ms.eventChan:
+				ms.storeOnFile()
+				fmt.Println("SAVED EVENT")
+			case <-ms.ctx.Done():
+				fmt.Println("storeWorkerOnUpdate stop")
+				return
+			}
+		}
+	}()
 }
 
 func (ms *memoryStorage) storeOnFile() {
@@ -119,8 +147,10 @@ func WithStore(storeFile string, interval time.Duration) func(*memoryStorage) {
 		fmt.Printf("WithStore on file: %s\n", storeFile)
 		ms.storeFile = storeFile
 		ms.storeInterval = interval
-		if ms.storeInterval != 0 {
-			go ms.storeWorker(interval)
+		if ms.storeInterval == 0 {
+			ms.storeWorkerOnUpdate()
+		} else {
+			ms.storeWorkerOnInterval(interval)
 		}
 
 	}
@@ -186,6 +216,7 @@ func WithRestore(fileName string, isRestore bool) func(*memoryStorage) {
 
 func NewMemoryStorage(options ...func(*memoryStorage)) IStorage {
 	ms := &memoryStorage{
+		eventChan: make(chan int),
 		isRestore: false,
 		values:    make(map[string]metric.IMetric),
 	}

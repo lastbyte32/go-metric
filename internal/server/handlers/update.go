@@ -22,6 +22,7 @@ func (h *handler) UpdateMetricFromJSON(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("invalid_type")
 		w.WriteHeader(http.StatusNotImplemented)
 		w.Write([]byte("err invalid_type"))
+		http.Error(w, "invalid_type", http.StatusNotImplemented)
 		return
 	}
 	var value = ""

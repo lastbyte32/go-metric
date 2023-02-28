@@ -2,12 +2,14 @@ package server
 
 import (
 	"context"
+	"errors"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/lastbyte32/go-metric/internal/server/handlers"
 	"github.com/lastbyte32/go-metric/internal/storage"
 	"log"
 	"net/http"
+	"os"
 )
 
 type server struct {
@@ -17,19 +19,12 @@ type server struct {
 
 func NewServer(config Configurator, ctx context.Context) *server {
 
-	/*
-		config.getStoreInterval() --- если 0 то пишем при каждом update
-		config.getStoreFile() --- если пусто то не пишем на диск
-
-		config.IsRestore() --- загружать ли данные при старте
-	*/
-
 	ms := storage.NewMemoryStorage(
 		storage.WithContext(ctx),
-		storage.WithStore(config.getStoreFile(), config.getStoreInterval()),
-		storage.WithRestore(config.getStoreFile(), config.IsRestore()),
+		//storage.WithStore(config.getStoreFile(), config.getStoreInterval()),
+		//storage.WithRestore(config.getStoreFile(), config.IsRestore()),
 
-		//	storage.WithStore("./devops-metrics-db.json", 10*time.Second),
+		storage.WithStore("./devops-metrics-db.json", 0),
 		//storage.WithRestore("./devops-metrics-db.json", config.IsRestore()),
 	)
 
@@ -69,8 +64,12 @@ func (s *server) Run() error {
 	}()
 
 	err := s.http.ListenAndServe()
-	if err != nil {
+	if errors.Is(err, http.ErrServerClosed) {
+		log.Println("HTTP server stopped successfully")
+		os.Exit(0)
+	} else {
 		return err
 	}
+
 	return nil
 }

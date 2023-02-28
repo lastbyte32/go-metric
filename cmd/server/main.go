@@ -2,10 +2,8 @@ package main
 
 import (
 	"context"
-	"errors"
 	"github.com/lastbyte32/go-metric/internal/server"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -22,10 +20,6 @@ func main() {
 
 	app := server.NewServer(config, ctx)
 	err = app.Run()
-	if errors.Is(err, http.ErrServerClosed) {
-		log.Println("Server stopped successfully")
-		return
-	}
 	if err != nil {
 		log.Fatal(err.Error())
 	}
