@@ -1,10 +1,12 @@
 package agent
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/go-resty/resty/v2"
 	"github.com/lastbyte32/go-metric/internal/metric"
 	"github.com/lastbyte32/go-metric/internal/storage"
+	"log"
 	"time"
 )
 
@@ -41,11 +43,14 @@ func (a *agent) transmitPlainText(m metric.IMetric) error {
 
 func (a *agent) transmitJSON(m metric.IMetric) error {
 	url := fmt.Sprintf("http://%s/update/", a.config.getAddress())
-	body, err := m.ToJSON()
+
+	body, err := json.Marshal(&m)
 	if err != nil {
+		log.Printf("Error in JSON marshal. Err: %s", err)
 		return err
 	}
-	//fmt.Println(string(body))
+
+	fmt.Println(string(body))
 	_, err = a.client.R().
 		SetHeader("Content-Type", "application/json").
 		SetBody(body).

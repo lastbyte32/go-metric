@@ -1,20 +1,38 @@
 package server
 
 import (
-	"fmt"
+	"context"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/lastbyte32/go-metric/internal/server/handlers"
 	"github.com/lastbyte32/go-metric/internal/storage"
+	"log"
 	"net/http"
 )
 
 type server struct {
 	http *http.Server
+	ctx  context.Context
 }
 
-func NewServer(config Configurator) *server {
-	ms := storage.NewMemoryStorage()
+func NewServer(config Configurator, ctx context.Context) *server {
+
+	/*
+		config.getStoreInterval() --- если 0 то пишем при каждом update
+		config.getStoreFile() --- если пусто то не пишем на диск
+
+		config.IsRestore() --- загружать ли данные при старте
+	*/
+
+	ms := storage.NewMemoryStorage(
+		storage.WithContext(ctx),
+		storage.WithStore(config.getStoreFile(), config.getStoreInterval()),
+		storage.WithRestore(config.getStoreFile(), config.IsRestore()),
+
+		//	storage.WithStore("./devops-metrics-db.json", 10*time.Second),
+		//storage.WithRestore("./devops-metrics-db.json", config.IsRestore()),
+	)
+
 	handler := handlers.NewHandler(ms)
 	router := chi.NewRouter()
 	router.Use(middleware.Logger, middleware.Recoverer)
@@ -32,16 +50,22 @@ func NewServer(config Configurator) *server {
 	}
 	return &server{
 		http: srv,
+		ctx:  ctx,
 	}
 }
 
 func (s *server) Run() error {
 
+	go func() {
+		<-s.ctx.Done()
+		if err := s.http.Shutdown(context.Background()); err != nil {
+			log.Printf("HTTP server shutdown error: %v", err)
+		}
+	}()
+
 	err := s.http.ListenAndServe()
 	if err != nil {
 		return err
 	}
-
-	fmt.Println("Server start")
 	return nil
 }

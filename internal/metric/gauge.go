@@ -37,6 +37,14 @@ func (g *gauge) SetValue(value string) error {
 	return nil
 }
 
+func (g *gauge) MarshalJSON() ([]byte, error) {
+	return json.Marshal(Metrics{
+		ID:    g.name,
+		MType: string(GAUGE),
+		Value: &g.value,
+	})
+}
+
 func NewGauge(name string, value float64) IMetric {
 	return &gauge{
 		name,

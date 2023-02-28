@@ -1,12 +1,24 @@
 package storage
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
 	"github.com/lastbyte32/go-metric/internal/metric"
+	"github.com/lastbyte32/go-metric/internal/utils"
+	"log"
+	"os"
 	"sync"
+	"time"
 )
 
 type memoryStorage struct {
-	values map[string]metric.IMetric
+	values        map[string]metric.IMetric
+	storeFile     string
+	storeInterval time.Duration
+	isRestore     bool
+	ctx           context.Context
+	fileMutex     sync.Mutex
 	sync.Mutex
 }
 
@@ -37,6 +49,9 @@ func (ms *memoryStorage) Update(name, value string, metricType metric.MType) err
 		ms.Lock()
 		ms.values[name] = newMetric
 		ms.Unlock()
+		if ms.storeInterval == 0 && ms.storeFile != "" {
+			ms.storeOnFile()
+		}
 		return nil
 	}
 	ms.Lock()
@@ -54,8 +69,129 @@ func (ms *memoryStorage) All() map[string]metric.IMetric {
 	return ms.values
 }
 
-func NewMemoryStorage() IStorage {
-	return &memoryStorage{
-		values: make(map[string]metric.IMetric),
+func (ms *memoryStorage) storeWorker(interval time.Duration) {
+
+	ticker := time.NewTicker(interval)
+	fmt.Printf("store worker start, interval: %.0fs\n", interval.Seconds())
+
+	for {
+		select {
+		case <-ticker.C:
+			ms.storeOnFile()
+		case <-ms.ctx.Done():
+			ms.storeOnFile()
+			ticker.Stop()
+			fmt.Println("store worker stop")
+			return
+		}
 	}
+}
+
+func (ms *memoryStorage) storeOnFile() {
+	log.Println("start store metric")
+
+	data, err := json.Marshal(ms.All())
+	if err != nil {
+		log.Printf("error  in JSON marshal. [%s]", err)
+		return
+	}
+	log.Print(string(data))
+	ms.fileMutex.Lock()
+	defer ms.fileMutex.Unlock()
+
+	file, err := os.OpenFile(ms.storeFile, os.O_WRONLY|os.O_CREATE, 0777)
+	if err != nil {
+		log.Printf("err open db: [%s]\n", err.Error())
+	}
+	defer file.Close()
+
+	_, err = file.Write(data)
+	if err != nil {
+		log.Printf("err write db file. [%s]", err.Error())
+		return
+	}
+
+	log.Printf("saved JSON to file")
+}
+
+func WithStore(storeFile string, interval time.Duration) func(*memoryStorage) {
+	return func(ms *memoryStorage) {
+		fmt.Printf("WithStore on file: %s\n", storeFile)
+		ms.storeFile = storeFile
+		ms.storeInterval = interval
+		if ms.storeInterval != 0 {
+			go ms.storeWorker(interval)
+		}
+
+	}
+}
+
+func WithContext(ctx context.Context) func(*memoryStorage) {
+	return func(ms *memoryStorage) {
+		ms.ctx = ctx
+	}
+}
+
+func WithRestore(fileName string, isRestore bool) func(*memoryStorage) {
+	if !isRestore {
+		fmt.Println("Restore skip")
+		return func(*memoryStorage) {}
+	}
+
+	if fileName == "" {
+		fmt.Println("Restore skip")
+		return func(*memoryStorage) {}
+	}
+
+	return func(ms *memoryStorage) {
+		ms.storeFile = fileName
+		fmt.Printf("WithRestore from file: %s\n", fileName)
+		ms.fileMutex.Lock()
+		defer ms.fileMutex.Unlock()
+		file, err := os.OpenFile(ms.storeFile, os.O_RDONLY, 0777)
+		if err != nil {
+			fmt.Printf("err open db: [%s]\n", err.Error())
+		}
+		defer file.Close()
+
+		metricsFromFile := make(map[string]metric.Metrics)
+		err = json.NewDecoder(file).Decode(&metricsFromFile)
+		if err != nil {
+			log.Println(err)
+		}
+		value := ""
+		for _, item := range metricsFromFile {
+			fmt.Println(item.ID)
+			switch metric.MType(item.MType) {
+			case metric.COUNTER:
+				value = fmt.Sprintf("%d", *item.Delta)
+			case metric.GAUGE:
+				value = utils.FloatToString(*item.Value)
+			default:
+				continue
+			}
+
+			if value == "" {
+				continue
+			}
+
+			err := ms.Update(item.ID, value, metric.MType(item.MType))
+			if err != nil {
+				fmt.Printf("update %s", err.Error())
+				return
+			}
+		}
+	}
+}
+
+func NewMemoryStorage(options ...func(*memoryStorage)) IStorage {
+	ms := &memoryStorage{
+		isRestore: false,
+		values:    make(map[string]metric.IMetric),
+	}
+
+	for _, o := range options {
+		o(ms)
+	}
+	return ms
 }

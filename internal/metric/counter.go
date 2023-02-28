@@ -40,6 +40,14 @@ func (c *counter) SetValue(value string) error {
 	return nil
 }
 
+func (c *counter) MarshalJSON() ([]byte, error) {
+	return json.Marshal(Metrics{
+		ID:    c.name,
+		MType: string(COUNTER),
+		Delta: &c.value,
+	})
+}
+
 func NewCounter(name string, value int64) IMetric {
 	return &counter{
 		name,
