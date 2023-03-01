@@ -1,8 +1,9 @@
 package handlers
 
 import (
-	"github.com/lastbyte32/go-metric/internal/storage"
 	"go.uber.org/zap"
+
+	"github.com/lastbyte32/go-metric/internal/storage"
 )
 
 type handler struct {

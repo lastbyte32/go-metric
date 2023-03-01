@@ -2,11 +2,12 @@ package main
 
 import (
 	"context"
-	"github.com/lastbyte32/go-metric/internal/server"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/lastbyte32/go-metric/internal/server"
 )
 
 func main() {

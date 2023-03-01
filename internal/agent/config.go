@@ -3,8 +3,9 @@ package agent
 import (
 	"flag"
 	"fmt"
-	"github.com/caarlos0/env/v7"
 	"time"
+
+	"github.com/caarlos0/env/v7"
 )
 
 type IConfigurator interface {

@@ -3,9 +3,11 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/go-chi/chi"
-	"github.com/lastbyte32/go-metric/internal/metric"
 	"net/http"
+
+	"github.com/go-chi/chi"
+
+	"github.com/lastbyte32/go-metric/internal/metric"
 )
 
 func (h *handler) GetMetricFromJSON(w http.ResponseWriter, r *http.Request) {

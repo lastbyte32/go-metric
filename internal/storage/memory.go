@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/lastbyte32/go-metric/internal/metric"
-	"github.com/lastbyte32/go-metric/internal/utils"
 	"log"
 	"os"
 	"sync"
 	"time"
+
+	"github.com/lastbyte32/go-metric/internal/metric"
+	"github.com/lastbyte32/go-metric/internal/utils"
 )
 
 type memoryStorage struct {

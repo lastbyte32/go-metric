@@ -3,14 +3,16 @@ package server
 import (
 	"context"
 	"errors"
-	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
-	"github.com/lastbyte32/go-metric/internal/server/handlers"
-	"github.com/lastbyte32/go-metric/internal/storage"
-	"go.uber.org/zap"
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
+	"go.uber.org/zap"
+
+	"github.com/lastbyte32/go-metric/internal/server/handlers"
+	"github.com/lastbyte32/go-metric/internal/storage"
 )
 
 type server struct {

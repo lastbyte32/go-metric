@@ -3,11 +3,13 @@ package agent
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/go-resty/resty/v2"
-	"github.com/lastbyte32/go-metric/internal/metric"
-	"github.com/lastbyte32/go-metric/internal/storage"
 	"log"
 	"time"
+
+	"github.com/go-resty/resty/v2"
+
+	"github.com/lastbyte32/go-metric/internal/metric"
+	"github.com/lastbyte32/go-metric/internal/storage"
 )
 
 type agent struct {
