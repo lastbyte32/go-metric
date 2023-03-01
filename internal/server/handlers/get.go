@@ -19,42 +19,36 @@ func (h *handler) GetMetricFromJSON(w http.ResponseWriter, r *http.Request) {
 	mtype := metric.MType(inputMetric.MType)
 	if mtype != metric.COUNTER && mtype != metric.GAUGE {
 		fmt.Println("invalid_type")
-		w.WriteHeader(http.StatusNotImplemented)
-		w.Write([]byte(`{"error": "err invalid_type"}`))
+		http.Error(w, "invalid_type", http.StatusNotImplemented)
 		return
 	}
 
-	metric, exist := h.metricsStorage.Get(inputMetric.ID)
+	m, exist := h.metricsStorage.Get(inputMetric.ID)
 	if !exist {
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(`{"error": "metric not found"}`))
+		http.Error(w, "metric not found", http.StatusNotFound)
 		return
 	}
-	json, err := metric.ToJSON()
+	jsonBody, err := json.Marshal(m)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(fmt.Sprintf(`{"error":"%s"}`, err)))
+		http.Error(w, fmt.Sprintf("err: %s", err.Error()), http.StatusInternalServerError)
 		return
 	}
-	w.Write(json)
+	w.Write(jsonBody)
 }
 
 func (h *handler) GetMetric(w http.ResponseWriter, r *http.Request) {
-	//fmt.Println("GetMetric")
+	h.logger.Info("http GetMetric")
 	mType := metric.MType(chi.URLParam(r, "type"))
 	if mType != metric.COUNTER && mType != metric.GAUGE {
-		w.WriteHeader(http.StatusNotImplemented)
+		http.Error(w, "invalid_type", http.StatusNotImplemented)
 		return
 	}
 
 	metricName := chi.URLParam(r, "name")
 	m, exist := h.metricsStorage.Get(metricName)
 	if !exist {
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte("metric not found"))
+		http.Error(w, "metric not found", http.StatusNotFound)
 		return
 	}
-
-	w.Header().Set("Content-Type", "text/plain")
 	w.Write([]byte(m.ToString()))
 }

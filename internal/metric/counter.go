@@ -24,11 +24,6 @@ func (c *counter) ToString() string {
 	return fmt.Sprintf("%d", c.value)
 }
 
-func (c *counter) ToJSON() ([]byte, error) {
-	m := Metrics{ID: c.name, MType: string(COUNTER), Delta: &c.value}
-	return json.Marshal(m)
-}
-
 func (c *counter) SetValue(value string) error {
 	//fmt.Println("Increase")
 	s, err := utils.StringToInt64(value)

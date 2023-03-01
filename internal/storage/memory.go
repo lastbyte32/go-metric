@@ -18,7 +18,7 @@ type memoryStorage struct {
 	storeInterval time.Duration
 	isRestore     bool
 	ctx           context.Context
-	eventChan     chan int
+	eventCh       chan int
 	fileMutex     sync.Mutex
 	sync.Mutex
 }
@@ -78,7 +78,7 @@ func (ms *memoryStorage) eventSaved() {
 	if ms.storeInterval != 0 {
 		return
 	}
-	ms.eventChan <- 1
+	ms.eventCh <- 1
 }
 
 func (ms *memoryStorage) storeWorkerOnInterval(interval time.Duration) {
@@ -104,7 +104,7 @@ func (ms *memoryStorage) storeWorkerOnUpdate() {
 	go func() {
 		for {
 			select {
-			case <-ms.eventChan:
+			case <-ms.eventCh:
 				ms.storeOnFile()
 				fmt.Println("SAVED EVENT")
 			case <-ms.ctx.Done():
@@ -216,7 +216,7 @@ func WithRestore(fileName string, isRestore bool) func(*memoryStorage) {
 
 func NewMemoryStorage(options ...func(*memoryStorage)) IStorage {
 	ms := &memoryStorage{
-		eventChan: make(chan int),
+		eventCh:   make(chan int),
 		isRestore: false,
 		values:    make(map[string]metric.IMetric),
 	}

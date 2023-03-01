@@ -23,11 +23,6 @@ func (g *gauge) ToString() string {
 	return utils.FloatToString(g.value)
 }
 
-func (g *gauge) ToJSON() ([]byte, error) {
-	m := Metrics{ID: g.name, MType: string(GAUGE), Value: &g.value}
-	return json.Marshal(m)
-}
-
 func (g *gauge) SetValue(value string) error {
 	f, err := utils.StringToFloat64(value)
 	if err != nil {
