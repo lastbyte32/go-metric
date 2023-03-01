@@ -41,6 +41,7 @@ func TestStringToFloat64(t *testing.T) {
 			got, err := StringToFloat64(tt.args)
 			if tt.wantErr {
 				require.Error(t, err)
+				return
 			}
 			assert.Equalf(t, tt.want, got, "StringToFloat64() got = %v, want %v", got, tt.want)
 		})
@@ -79,6 +80,7 @@ func TestStringToInt64(t *testing.T) {
 			got, err := StringToInt64(tt.args)
 			if tt.wantErr {
 				require.Error(t, err)
+				return
 			}
 			assert.Equalf(t, tt.want, got, "StringToInt64(%v)", tt.args)
 		})
