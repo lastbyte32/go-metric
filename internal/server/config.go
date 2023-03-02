@@ -16,10 +16,10 @@ type Configurator interface {
 }
 
 const (
-	address       = "127.0.0.1:8080"
-	storeInterval = 300 * time.Second
-	storeFile     = "/tmp/devops-metrics-db.json"
-	restore       = true
+	addressDefault       = "127.0.0.1:8080"
+	storeIntervalDefault = 300 * time.Second
+	storeFileDefault     = "/tmp/devops-metrics-db.json"
+	restoreDefault       = true
 )
 
 type config struct {
@@ -53,10 +53,10 @@ func (c *config) env() error {
 }
 
 func (c *config) flags() {
-	flag.StringVar(&c.Address, "a", address, "server binding host:port")
-	flag.StringVar(&c.StoreFile, "f", storeFile, "store metrics in file")
-	flag.BoolVar(&c.Restore, "r", restore, "restore metrics")
-	flag.DurationVar(&c.StoreInterval, "i", storeInterval, "store metrics on interval")
+	flag.StringVar(&c.Address, "a", addressDefault, "server binding host:port")
+	flag.StringVar(&c.StoreFile, "f", storeFileDefault, "store metrics in file")
+	flag.BoolVar(&c.Restore, "r", restoreDefault, "restoreDefault metrics")
+	flag.DurationVar(&c.StoreInterval, "i", storeIntervalDefault, "store metrics on interval")
 	flag.Parse()
 }
 

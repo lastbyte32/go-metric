@@ -12,16 +12,17 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/lastbyte32/go-metric/internal/server/handlers"
+	customMiddleware "github.com/lastbyte32/go-metric/internal/server/middleware"
 	"github.com/lastbyte32/go-metric/internal/storage"
 )
 
 type server struct {
 	http   *http.Server
-	ctx    context.Context
+	store  storage.IStorage
 	logger *zap.SugaredLogger
 }
 
-func NewServer(config Configurator, ctx context.Context) *server {
+func NewServer(config Configurator) *server {
 
 	l, err := zap.NewDevelopment()
 	if err != nil {
@@ -30,17 +31,23 @@ func NewServer(config Configurator, ctx context.Context) *server {
 	logger := l.Sugar()
 	defer logger.Sync()
 
-	ms := storage.NewMemoryStorage(
-		storage.WithContext(ctx),
-		storage.WithStore(config.getStoreFile(), config.getStoreInterval()),
-		storage.WithRestore(config.getStoreFile(), config.IsRestore()),
-	)
+	var store storage.IStorage
+	if config.getStoreFile() != "" {
+		store = storage.NewFileStorage(
+			logger,
+			config.getStoreFile(),
+			config.getStoreInterval(),
+			config.IsRestore(),
+		)
+	} else {
+		store = storage.NewMemoryStorage(logger)
+	}
 
-	handler := handlers.NewHandler(ms, logger)
+	handler := handlers.NewHandler(store, logger)
 	router := chi.NewRouter()
 	router.Use(
+		customMiddleware.Compressor,
 		middleware.Logger,
-		middleware.Compress(5),
 		middleware.Recoverer,
 	)
 
@@ -52,32 +59,44 @@ func NewServer(config Configurator, ctx context.Context) *server {
 		r.Post("/value/", handler.GetMetricFromJSON)
 	})
 
-	srv := &http.Server{
+	httpServer := &http.Server{
 		Addr:    config.getAddress(),
 		Handler: router,
 	}
 	return &server{
-		http:   srv,
-		ctx:    ctx,
+		http:   httpServer,
 		logger: logger,
+		store:  store,
 	}
 }
 
-func (s *server) Run() error {
+func (s *server) shutdownHttp() {
+	s.logger.Info("shutdown http server")
+	err := s.http.Shutdown(context.Background())
+	if err != nil {
+		s.logger.Errorf("HTTP server shutdown error: %v", err)
+	}
+}
+
+func (s *server) Run(ctx context.Context) error {
 	s.logger.Info("http server run")
 
 	go func() {
-		<-s.ctx.Done()
-		if err := s.http.Shutdown(context.Background()); err != nil {
-			s.logger.Errorf("HTTP server shutdown error: %v", err)
-		}
+		<-ctx.Done()
+		s.shutdownHttp()
 	}()
-	err := s.http.ListenAndServe()
-	if errors.Is(err, http.ErrServerClosed) {
+
+	errStore := s.store.Init(ctx)
+	if errStore != nil {
+		return errStore
+	}
+
+	errHttp := s.http.ListenAndServe()
+	if errors.Is(errHttp, http.ErrServerClosed) {
 		s.logger.Info("HTTP server stopped successfully")
 		os.Exit(0)
 	} else {
-		return err
+		return errHttp
 	}
 
 	return nil

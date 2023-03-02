@@ -16,12 +16,14 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
-	ctx, ctxCancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+	ctx, ctxCancel := signal.NotifyContext(context.Background(),
+		os.Interrupt,
+		syscall.SIGTERM,
+		syscall.SIGINT,
+		syscall.SIGQUIT,
+	)
 	defer ctxCancel()
 
-	app := server.NewServer(config, ctx)
-	err = app.Run()
-	if err != nil {
-		log.Fatal(err.Error())
-	}
+	app := server.NewServer(config)
+	log.Fatal(app.Run(ctx))
 }

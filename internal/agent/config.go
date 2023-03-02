@@ -16,12 +16,12 @@ type IConfigurator interface {
 }
 
 const (
-	address        = "127.0.0.1:8080"
-	reportInterval = 10 * time.Second
-	pollInterval   = 2 * time.Second
+	addressDefault        = "127.0.0.1:8080"
+	reportIntervalDefault = 10 * time.Second
+	pollIntervalDefault   = 2 * time.Second
+	reportTimeoutDefault  = 20 * time.Second
 )
 
-// что бы воспользоваться библиотекой github.com/caarlos0/env/v7, пришлось сделать своиства экспортируемыми
 type config struct {
 	Address        string        `env:"ADDRESS"`
 	ReportInterval time.Duration `env:"REPORT_INTERVAL"`
@@ -53,10 +53,10 @@ func (c *config) env() error {
 }
 
 func (c *config) flags() {
-	flag.StringVar(&c.Address, "a", address, "metric server address")
-	flag.DurationVar(&c.ReportInterval, "r", reportInterval, "report interval")
-	flag.DurationVar(&c.PollInterval, "p", pollInterval, "poll interval")
-	flag.DurationVar(&c.ReportTimeout, "t", time.Second*2, "report timeout")
+	flag.StringVar(&c.Address, "a", addressDefault, "metric server address")
+	flag.DurationVar(&c.ReportInterval, "r", reportIntervalDefault, "report interval")
+	flag.DurationVar(&c.PollInterval, "p", pollIntervalDefault, "poll interval")
+	flag.DurationVar(&c.ReportTimeout, "t", reportTimeoutDefault, "report timeout")
 	flag.Parse()
 }
 
