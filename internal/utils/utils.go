@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"strconv"
 )
@@ -25,4 +27,14 @@ func StringToInt64(value string) (int64, error) {
 
 func FloatToString(value float64) string {
 	return strconv.FormatFloat(value, 'f', -1, 64)
+}
+
+func GetMD5Sum(data []byte) []byte {
+	hash := md5.New()
+	hash.Write(data)
+	return hash.Sum(nil)
+}
+
+func GetMD5Hash(data []byte) string {
+	return hex.EncodeToString(GetMD5Sum(data))
 }

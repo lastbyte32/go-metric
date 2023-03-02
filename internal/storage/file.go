@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"crypto/md5"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -24,7 +23,7 @@ type fileStorage struct {
 	eventCh        chan int
 	fileMutex      sync.RWMutex
 	logger         *zap.SugaredLogger
-	hash           [16]byte
+	hash           string
 	shutdownSignal chan int
 }
 
@@ -58,7 +57,7 @@ func (store *fileStorage) saveInFile() {
 		store.logger.Infof("error  in JSON marshal. [%s]", err)
 		return
 	}
-	jsonHash := md5.Sum(data)
+	jsonHash := store.getHash(data)
 	if store.hash == jsonHash {
 		store.logger.Info("hash equal, save skip")
 		return
@@ -124,6 +123,10 @@ func (store *fileStorage) restore() {
 			return
 		}
 	}
+}
+
+func (store *fileStorage) getHash(data []byte) string {
+	return utils.GetMD5Hash(data)
 }
 
 func (store *fileStorage) Init(ctx context.Context) error {
