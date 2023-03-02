@@ -16,15 +16,12 @@ import (
 
 type fileStorage struct {
 	*memoryStorage
-
-	file           string
-	interval       time.Duration
-	isRestore      bool
-	eventCh        chan int
-	fileMutex      sync.RWMutex
-	logger         *zap.SugaredLogger
-	hash           string
-	shutdownSignal chan int
+	file      string
+	interval  time.Duration
+	isRestore bool
+	fileMutex sync.RWMutex
+	logger    *zap.SugaredLogger
+	hash      string
 }
 
 func (store *fileStorage) storeWorkerOnInterval(ctx context.Context) {
