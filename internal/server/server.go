@@ -70,7 +70,7 @@ func NewServer(config Configurator) *server {
 	}
 }
 
-func (s *server) shutdownHttp() {
+func (s *server) shutdownHTTP() {
 	s.logger.Info("shutdown http server")
 	err := s.http.Shutdown(context.Background())
 	if err != nil {
@@ -83,7 +83,7 @@ func (s *server) Run(ctx context.Context) error {
 
 	go func() {
 		<-ctx.Done()
-		s.shutdownHttp()
+		s.shutdownHTTP()
 	}()
 
 	errStore := s.store.Init(ctx)
@@ -91,12 +91,12 @@ func (s *server) Run(ctx context.Context) error {
 		return errStore
 	}
 
-	errHttp := s.http.ListenAndServe()
-	if errors.Is(errHttp, http.ErrServerClosed) {
+	errHTTP := s.http.ListenAndServe()
+	if errors.Is(errHTTP, http.ErrServerClosed) {
 		s.logger.Info("HTTP server stopped successfully")
 		os.Exit(0)
 	} else {
-		return errHttp
+		return errHTTP
 	}
 
 	return nil
