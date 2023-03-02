@@ -79,11 +79,11 @@ func (s *server) shutdownHTTP() {
 }
 
 func (s *server) Run(ctx context.Context) error {
-
 	s.logger.Info("http server run")
 
 	go func() {
 		<-ctx.Done()
+		s.logger.Info("Received signal, stopping application")
 		s.shutdownHTTP()
 	}()
 

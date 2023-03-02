@@ -19,11 +19,11 @@ func (ms *memoryStorage) Get(name string) (metric.IMetric, bool) {
 	ms.logger.Infof("store: get %s", name)
 	ms.mutex.RLock()
 	defer ms.mutex.RUnlock()
-	m, ok := ms.values[name]
-	if ok {
-		return m, true
+	oneMetric, ok := ms.values[name]
+	if !ok {
+		return nil, false
 	}
-	return nil, false
+	return oneMetric, true
 }
 
 func (ms *memoryStorage) Update(name, value string, metricType metric.MType) error {

@@ -85,10 +85,9 @@ func (a *agent) sendReport() {
 }
 
 func (a *agent) Pool() {
-	//fmt.Println("Pool...")
-	memstat := getMemStat()
+	memStats := getMemStat()
 
-	for n, v := range memstat {
+	for n, v := range memStats {
 		value := fmt.Sprintf("%.3f", v)
 		err := a.ms.Update(n, value, metric.GAUGE)
 		if err != nil {

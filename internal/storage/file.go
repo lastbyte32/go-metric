@@ -127,7 +127,6 @@ func (store *fileStorage) getHash(data []byte) string {
 }
 
 func (store *fileStorage) Init(ctx context.Context) error {
-
 	if store.isRestore {
 		store.restore()
 	}

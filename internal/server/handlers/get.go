@@ -18,8 +18,8 @@ func (h *handler) GetMetricFromJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	mtype := metric.MType(inputMetric.MType)
-	if mtype != metric.COUNTER && mtype != metric.GAUGE {
+	mType := metric.MType(inputMetric.MType)
+	if mType != metric.COUNTER && mType != metric.GAUGE {
 		fmt.Println("invalid_type")
 		http.Error(w, "invalid_type", http.StatusNotImplemented)
 		return
