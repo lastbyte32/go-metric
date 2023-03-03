@@ -148,7 +148,7 @@ func (store *fileStorage) hasChanges(data []byte) bool {
 	return true
 }
 
-func NewFileStorage(l *zap.SugaredLogger, config config.IStorage) IStorage {
+func NewFileStorage(l *zap.SugaredLogger, config config.Configurator) IStorage {
 	l.Info("new file storage")
 	channel := make(chan int)
 	store := &fileStorage{

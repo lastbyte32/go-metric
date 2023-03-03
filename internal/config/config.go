@@ -8,47 +8,36 @@ import (
 	"github.com/caarlos0/env/v7"
 )
 
+/*
+Не смог побороть циклический импорт
+Вынес конфиг в отдельный пакет
+Далее думаю все же убрать отдельный конфиг для агента и сделать из этого пакета общий
+
+	type Configurator interface {
+		IServer
+		IAgent
+		IStorage
+	}
+*/
 type Configurator interface {
-	IStorage
-	IServer
-	IAgent
-}
-
-type IStorage interface {
-	IsRestore() bool
-	GetStoreFile() string
+	GetAddress() string
 	GetStoreInterval() time.Duration
-}
-
-type IAgent interface {
-	GetAddress() string
-	GetReportInterval() time.Duration
-	GetReportTimeout() time.Duration
-	GetPollInterval() time.Duration
-}
-
-type IServer interface {
-	GetAddress() string
+	GetStoreFile() string
+	IsRestore() bool
 }
 
 const (
-	addressDefault        = "127.0.0.1:8080"
-	storeIntervalDefault  = 10 * time.Second
-	storeFileDefault      = "/tmp/devops-metrics-db.json"
-	restoreDefault        = false
-	reportIntervalDefault = 10 * time.Second
-	pollIntervalDefault   = 2 * time.Second
-	reportTimeoutDefault  = 20 * time.Second
+	addressDefault       = "127.0.0.1:8080"
+	storeIntervalDefault = 10 * time.Second
+	storeFileDefault     = "/tmp/devops-metrics-db.json"
+	restoreDefault       = false
 )
 
 type config struct {
-	Address        string        `env:"ADDRESS"`
-	StoreInterval  time.Duration `env:"STORE_INTERVAL"`
-	StoreFile      string        `env:"STORE_FILE"`
-	Restore        bool          `env:"RESTORE"`
-	ReportInterval time.Duration `env:"REPORT_INTERVAL"`
-	ReportTimeout  time.Duration `env:"REPORT_TIMEOUT" envDefault:"20s"`
-	PollInterval   time.Duration `env:"POLL_INTERVAL"`
+	Address       string        `env:"ADDRESS"`
+	StoreInterval time.Duration `env:"STORE_INTERVAL"`
+	StoreFile     string        `env:"STORE_FILE"`
+	Restore       bool          `env:"RESTORE"`
 }
 
 func (c *config) GetStoreFile() string {
@@ -67,17 +56,14 @@ func (c *config) GetStoreInterval() time.Duration {
 	return c.StoreInterval
 }
 
-func (c *config) GetReportInterval() time.Duration {
-	return c.ReportInterval
-}
-
-func (c *config) GetReportTimeout() time.Duration {
-	return c.ReportTimeout
-}
-
-func (c *config) GetPollInterval() time.Duration {
-	return c.PollInterval
-}
+// Из за этого метода появляется циклический импорт, да и мне тоже не нравится возвращать тип из другого пакета
+//func (c *config) GetStorageType() storage.Type {
+//	if c.StoreFile == "" {
+//		return storage.MEMORY
+//	}
+//	return storage.FILE
+//}
+// TODO удалю этот код после ревью
 
 func (c *config) env() error {
 	if err := env.Parse(c); err != nil {
@@ -91,9 +77,6 @@ func (c *config) flags() {
 	flag.StringVar(&c.StoreFile, "f", storeFileDefault, "store metrics in file")
 	flag.BoolVar(&c.Restore, "r", restoreDefault, "restoreDefault metrics")
 	flag.DurationVar(&c.StoreInterval, "i", storeIntervalDefault, "store metrics on interval")
-	flag.DurationVar(&c.ReportInterval, "r", reportIntervalDefault, "report interval")
-	flag.DurationVar(&c.PollInterval, "p", pollIntervalDefault, "poll interval")
-	flag.DurationVar(&c.ReportTimeout, "t", reportTimeoutDefault, "report timeout")
 	flag.Parse()
 }
 

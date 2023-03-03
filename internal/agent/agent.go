@@ -10,7 +10,6 @@ import (
 	"github.com/go-resty/resty/v2"
 	"go.uber.org/zap"
 
-	"github.com/lastbyte32/go-metric/internal/config"
 	"github.com/lastbyte32/go-metric/internal/metric"
 	"github.com/lastbyte32/go-metric/internal/storage"
 )
@@ -18,11 +17,11 @@ import (
 type agent struct {
 	ms     storage.IStorage
 	client *resty.Client
-	config config.IAgent
+	config IConfigurator
 	logger *zap.SugaredLogger
 }
 
-func NewAgent(config config.IAgent) *agent {
+func NewAgent(config IConfigurator) *agent {
 
 	l, err := zap.NewDevelopment()
 	if err != nil {
@@ -32,7 +31,7 @@ func NewAgent(config config.IAgent) *agent {
 	defer logger.Sync()
 
 	client := resty.New().
-		SetTimeout(config.GetReportTimeout())
+		SetTimeout(config.getReportTimeout())
 	memory := storage.NewMemoryStorage(logger)
 	return &agent{
 		client: client,
@@ -43,7 +42,7 @@ func NewAgent(config config.IAgent) *agent {
 }
 
 func (a *agent) transmitPlainText(m metric.IMetric) error {
-	url := fmt.Sprintf("http://%s/update/%s/%s/%s", a.config.GetAddress(), m.GetType(), m.GetName(), m.ToString())
+	url := fmt.Sprintf("http://%s/update/%s/%s/%s", a.config.getAddress(), m.GetType(), m.GetName(), m.ToString())
 
 	_, err := a.client.R().
 		SetHeader("Content-Type", "text/plain").
@@ -56,7 +55,7 @@ func (a *agent) transmitPlainText(m metric.IMetric) error {
 }
 
 func (a *agent) transmitJSON(m metric.IMetric) error {
-	url := fmt.Sprintf("http://%s/update/", a.config.GetAddress())
+	url := fmt.Sprintf("http://%s/update/", a.config.getAddress())
 
 	body, err := json.Marshal(&m)
 	if err != nil {
@@ -76,7 +75,7 @@ func (a *agent) transmitJSON(m metric.IMetric) error {
 }
 
 func (a *agent) sendReport() {
-	// fmt.Println("sendReport")
+	//fmt.Println("sendReport")
 	for _, m := range a.ms.All() {
 		err := a.transmitJSON(m)
 		if err != nil {
@@ -104,8 +103,8 @@ func (a *agent) Pool() {
 
 func (a *agent) Run(ctx context.Context) {
 	a.logger.Info("Agent start")
-	reportTimer := time.NewTicker(a.config.GetReportInterval())
-	poolTimer := time.NewTicker(a.config.GetPollInterval())
+	reportTimer := time.NewTicker(a.config.getReportInterval())
+	poolTimer := time.NewTicker(a.config.getPollInterval())
 
 	defer func() {
 		poolTimer.Stop()
