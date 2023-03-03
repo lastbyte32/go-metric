@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"go.uber.org/zap"
 
+	"github.com/lastbyte32/go-metric/internal/config"
 	"github.com/lastbyte32/go-metric/internal/server/handlers"
 	customMiddleware "github.com/lastbyte32/go-metric/internal/server/middleware"
 	"github.com/lastbyte32/go-metric/internal/storage"
@@ -22,7 +23,7 @@ type server struct {
 	logger *zap.SugaredLogger
 }
 
-func NewServer(config Configurator) *server {
+func NewServer(config config.Configurator) *server {
 
 	l, err := zap.NewDevelopment()
 	if err != nil {
@@ -31,17 +32,7 @@ func NewServer(config Configurator) *server {
 	logger := l.Sugar()
 	defer logger.Sync()
 
-	var store storage.IStorage
-	if config.getStoreFile() != "" {
-		store = storage.NewFileStorage(
-			logger,
-			config.getStoreFile(),
-			config.getStoreInterval(),
-			config.IsRestore(),
-		)
-	} else {
-		store = storage.NewMemoryStorage(logger)
-	}
+	store := storage.New(config, logger)
 
 	handler := handlers.NewHandler(store, logger)
 	router := chi.NewRouter()
@@ -60,7 +51,7 @@ func NewServer(config Configurator) *server {
 	})
 
 	httpServer := &http.Server{
-		Addr:    config.getAddress(),
+		Addr:    config.GetAddress(),
 		Handler: router,
 	}
 	return &server{
@@ -70,34 +61,33 @@ func NewServer(config Configurator) *server {
 	}
 }
 
-func (s *server) shutdownHTTP() {
-	s.logger.Info("shutdown http server")
-	err := s.http.Shutdown(context.Background())
+func (s *server) shutdown() {
+	s.logger.Info("shutdown application")
+
+	err := s.store.Close()
+	if err != nil {
+		s.logger.Errorf("store shutdown error: %v", err)
+	}
+
+	err = s.http.Shutdown(context.Background())
 	if err != nil {
 		s.logger.Errorf("HTTP server shutdown error: %v", err)
 	}
 }
-
 func (s *server) Run(ctx context.Context) error {
-	s.logger.Info("http server run")
-
 	go func() {
+		s.logger.Info("start shutdown watcher")
 		<-ctx.Done()
 		s.logger.Info("Received signal, stopping application")
-		s.shutdownHTTP()
+		s.shutdown()
 	}()
-
-	errStore := s.store.Init(ctx)
-	if errStore != nil {
-		return errStore
-	}
-
-	errHTTP := s.http.ListenAndServe()
-	if errors.Is(errHTTP, http.ErrServerClosed) {
+	s.logger.Info("http server run")
+	err := s.http.ListenAndServe()
+	if errors.Is(err, http.ErrServerClosed) {
 		s.logger.Info("HTTP server stopped successfully")
 		os.Exit(0)
 	} else {
-		return errHTTP
+		return err
 	}
 
 	return nil

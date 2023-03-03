@@ -1,4 +1,4 @@
-package server
+package config
 
 import (
 	"flag"
@@ -8,18 +8,29 @@ import (
 	"github.com/caarlos0/env/v7"
 )
 
+/*
+Не смог побороть циклический импорт
+Вынес конфиг в отдельный пакет
+Далее думаю все же убрать отдельный конфиг для агента и сделать из этого пакета общий
+
+	type Configurator interface {
+		IServer
+		IAgent
+		IStorage
+	}
+*/
 type Configurator interface {
-	getAddress() string
-	getStoreInterval() time.Duration
-	getStoreFile() string
+	GetAddress() string
+	GetStoreInterval() time.Duration
+	GetStoreFile() string
 	IsRestore() bool
 }
 
 const (
 	addressDefault       = "127.0.0.1:8080"
-	storeIntervalDefault = 300 * time.Second
+	storeIntervalDefault = 10 * time.Second
 	storeFileDefault     = "/tmp/devops-metrics-db.json"
-	restoreDefault       = true
+	restoreDefault       = false
 )
 
 type config struct {
@@ -29,7 +40,7 @@ type config struct {
 	Restore       bool          `env:"RESTORE"`
 }
 
-func (c *config) getStoreFile() string {
+func (c *config) GetStoreFile() string {
 	return c.StoreFile
 }
 
@@ -37,13 +48,22 @@ func (c *config) IsRestore() bool {
 	return c.Restore
 }
 
-func (c *config) getAddress() string {
+func (c *config) GetAddress() string {
 	return c.Address
 }
 
-func (c *config) getStoreInterval() time.Duration {
+func (c *config) GetStoreInterval() time.Duration {
 	return c.StoreInterval
 }
+
+// Из за этого метода появляется циклический импорт, да и мне тоже не нравится возвращать тип из другого пакета
+//func (c *config) GetStorageType() storage.Type {
+//	if c.StoreFile == "" {
+//		return storage.MEMORY
+//	}
+//	return storage.FILE
+//}
+// TODO удалю этот код после ревью
 
 func (c *config) env() error {
 	if err := env.Parse(c); err != nil {

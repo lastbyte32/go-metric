@@ -7,11 +7,12 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/lastbyte32/go-metric/internal/config"
 	"github.com/lastbyte32/go-metric/internal/server"
 )
 
 func main() {
-	config, err := server.NewConfig()
+	cfg, err := config.NewConfig()
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -24,6 +25,6 @@ func main() {
 	)
 	defer ctxCancel()
 
-	app := server.NewServer(config)
-	log.Fatal(app.Run(ctx))
+	app := server.NewServer(cfg)
+	log.Panic(app.Run(ctx))
 }

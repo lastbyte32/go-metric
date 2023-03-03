@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"context"
 	"sync"
 
 	"go.uber.org/zap"
@@ -13,6 +12,11 @@ type memoryStorage struct {
 	values map[string]metric.IMetric
 	logger *zap.SugaredLogger
 	mutex  sync.RWMutex
+}
+
+func (ms *memoryStorage) Close() error {
+	// хранилище in-memory, нечего делать при завершении
+	return nil
 }
 
 func (ms *memoryStorage) Get(name string) (metric.IMetric, bool) {
@@ -55,17 +59,8 @@ func (ms *memoryStorage) All() map[string]metric.IMetric {
 	return ms.values
 }
 
-func (ms *memoryStorage) Init(ctx context.Context) error {
-	go func() {
-		<-ctx.Done()
-		ms.logger.Info("shutdown memory storage")
-	}()
-	return nil
-}
-
 func NewMemoryStorage(l *zap.SugaredLogger) IStorage {
 	l.Info("new memory storage")
-
 	return &memoryStorage{
 		values: make(map[string]metric.IMetric),
 		logger: l,

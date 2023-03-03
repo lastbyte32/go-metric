@@ -2,6 +2,8 @@ package metric
 
 import (
 	"errors"
+	"fmt"
+
 	"github.com/lastbyte32/go-metric/internal/utils"
 )
 
@@ -19,6 +21,18 @@ type Metrics struct {
 	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
 }
 
+func (m *Metrics) GetValueAsString() string {
+	// Или этот метод нужен только в рамках файлового хранилища и его нужно имплементировать там?
+	switch MType(m.MType) {
+	case COUNTER:
+		return fmt.Sprintf("%d", *m.Delta)
+	case GAUGE:
+		return utils.FloatToString(*m.Value)
+	default:
+		return ""
+	}
+}
+
 type IMetric interface {
 	GetName() string
 	GetType() MType
@@ -29,7 +43,6 @@ type IMetric interface {
 
 func NewByString(name string, value string, metricType MType) (IMetric, error) {
 	switch metricType {
-
 	case GAUGE:
 		f, err := utils.StringToFloat64(value)
 		if err != nil {

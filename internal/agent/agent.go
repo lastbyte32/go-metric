@@ -103,7 +103,6 @@ func (a *agent) Pool() {
 
 func (a *agent) Run(ctx context.Context) {
 	a.logger.Info("Agent start")
-	a.ms.Init(ctx)
 	reportTimer := time.NewTicker(a.config.getReportInterval())
 	poolTimer := time.NewTicker(a.config.getPollInterval())
 

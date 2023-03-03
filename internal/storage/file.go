@@ -1,30 +1,56 @@
 package storage
 
 import (
-	"context"
 	"encoding/json"
-	"fmt"
 	"os"
 	"sync"
 	"time"
 
 	"go.uber.org/zap"
 
+	"github.com/lastbyte32/go-metric/internal/config"
 	"github.com/lastbyte32/go-metric/internal/metric"
 	"github.com/lastbyte32/go-metric/internal/utils"
 )
 
+const (
+	WRITE = os.O_WRONLY | os.O_CREATE
+	READ  = os.O_RDONLY
+	PERM  = 0644
+)
+
 type fileStorage struct {
 	*memoryStorage
-	file      string
-	interval  time.Duration
-	isRestore bool
-	fileMutex sync.RWMutex
-	logger    *zap.SugaredLogger
-	hash      string
+	file       string
+	interval   time.Duration
+	isRestore  bool
+	fileMutex  sync.RWMutex
+	logger     *zap.SugaredLogger
+	hash       string
+	stopWorker chan int
 }
 
-func (store *fileStorage) storeWorkerOnInterval(ctx context.Context) {
+func (store *fileStorage) Close() error {
+	store.logger.Info("shutdown close")
+	store.stopWorker <- 1
+	close(store.stopWorker)
+	err := store.saveInFile()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (store *fileStorage) openFile(mode int) (*os.File, error) {
+	file, err := os.OpenFile(store.file, mode, PERM)
+	if err != nil {
+		store.logger.Infof("err open file: %s, [%s]", store.file, err.Error())
+		return nil, err
+	}
+	return file, err
+}
+
+func (store *fileStorage) storeWorkerOnInterval() {
 	store.logger.Infof("store worker start, interval: %.0fs", store.interval.Seconds())
 	go func() {
 		ticker := time.NewTicker(store.interval)
@@ -33,33 +59,32 @@ func (store *fileStorage) storeWorkerOnInterval(ctx context.Context) {
 			select {
 			case <-ticker.C:
 				store.saveInFile()
-			case <-ctx.Done():
-				store.saveInFile()
-				store.logger.Info("shutdown store worker")
+			case <-store.stopWorker:
+				store.logger.Info("store worker stop")
 				return
 			}
 		}
 	}()
 }
 
-func (store *fileStorage) saveInFile() {
+func (store *fileStorage) saveInFile() error {
 	store.logger.Info("start store metric")
 	metrics := store.All()
 	if len(metrics) == 0 {
 		store.logger.Info("metric empty, save skip")
-		return
+		return nil
 	}
+
 	data, err := json.Marshal(metrics)
 	if err != nil {
 		store.logger.Infof("error  in JSON marshal. [%s]", err)
-		return
+		return err
 	}
-	jsonHash := store.getHash(data)
-	if store.hash == jsonHash {
-		store.logger.Info("hash equal, save skip")
-		return
+
+	if !store.hasChanges(data) {
+		store.logger.Info("no changes, skip save job")
+		return nil
 	}
-	store.hash = jsonHash
 
 	store.logger.Info(
 		zap.String("metrics", string(data)),
@@ -67,29 +92,29 @@ func (store *fileStorage) saveInFile() {
 
 	store.fileMutex.Lock()
 	defer store.fileMutex.Unlock()
-	file, err := os.OpenFile(store.file, os.O_WRONLY|os.O_CREATE, 0644)
+	file, err := store.openFile(WRITE)
 	if err != nil {
-		store.logger.Infof("err open file: %s, [%s]", store.file, err.Error())
-		return
+		return err
 	}
+
 	defer file.Close()
 
 	_, err = file.Write(data)
 	if err != nil {
 		store.logger.Infof("err write file. [%s]", err.Error())
-		return
+		return err
 	}
 
 	store.logger.Info("saved JSON to file")
+	return nil
 }
 
 func (store *fileStorage) restore() {
 	store.logger.Infof("restore from file: %s", store.file)
 	store.fileMutex.RLock()
 	defer store.fileMutex.RUnlock()
-	file, err := os.OpenFile(store.file, os.O_RDONLY, 0777)
+	file, err := store.openFile(READ)
 	if err != nil {
-		store.logger.Infof("err open file: [%s]", err.Error())
 		return
 	}
 	defer file.Close()
@@ -98,23 +123,11 @@ func (store *fileStorage) restore() {
 	err = json.NewDecoder(file).Decode(&metricsFromFile)
 	if err != nil {
 		store.logger.Infof("file decode err: %s", err)
+		return
 	}
-	value := ""
+
 	for _, item := range metricsFromFile {
-		switch metric.MType(item.MType) {
-		case metric.COUNTER:
-			value = fmt.Sprintf("%d", *item.Delta)
-		case metric.GAUGE:
-			value = utils.FloatToString(*item.Value)
-		default:
-			continue
-		}
-
-		if value == "" {
-			continue
-		}
-
-		err := store.Update(item.ID, value, metric.MType(item.MType))
+		err := store.Update(item.ID, item.GetValueAsString(), metric.MType(item.MType))
 		if err != nil {
 			store.logger.Infof("update %s", err.Error())
 			return
@@ -126,37 +139,36 @@ func (store *fileStorage) getHash(data []byte) string {
 	return utils.GetMD5Hash(data)
 }
 
-func (store *fileStorage) Init(ctx context.Context) error {
-	if store.isRestore {
-		store.restore()
+func (store *fileStorage) hasChanges(data []byte) bool {
+	hash := store.getHash(data)
+	if hash == store.hash {
+		return false
 	}
-
-	if store.interval == 0 {
-		go func() {
-			store.logger.Info("start shutdown watcher")
-			<-ctx.Done()
-			store.saveInFile()
-			store.logger.Info("shutdown file storage")
-		}()
-	} else {
-		store.storeWorkerOnInterval(ctx)
-	}
-
-	return nil
+	store.hash = hash
+	return true
 }
 
-func NewFileStorage(l *zap.SugaredLogger, storeFile string, storeInterval time.Duration, isRestore bool) IStorage {
+func NewFileStorage(l *zap.SugaredLogger, config config.Configurator) IStorage {
 	l.Info("new file storage")
-
+	channel := make(chan int)
 	store := &fileStorage{
 		memoryStorage: &memoryStorage{
 			logger: l,
 			values: make(map[string]metric.IMetric),
 		},
-		interval:  storeInterval,
-		file:      storeFile,
-		logger:    l,
-		isRestore: isRestore,
+		logger:     l,
+		interval:   config.GetStoreInterval(),
+		file:       config.GetStoreFile(),
+		isRestore:  config.IsRestore(),
+		stopWorker: channel,
+	}
+
+	if store.isRestore {
+		store.restore()
+	}
+
+	if store.interval != 0 {
+		store.storeWorkerOnInterval()
 	}
 
 	return store
