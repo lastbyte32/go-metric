@@ -8,10 +8,11 @@ import (
 	"syscall"
 
 	"github.com/lastbyte32/go-metric/internal/agent"
+	"github.com/lastbyte32/go-metric/internal/config"
 )
 
 func main() {
-	config, err := agent.NewConfig()
+	cfg, err := config.NewConfig()
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -24,6 +25,6 @@ func main() {
 	)
 
 	defer ctxCancel()
-	app := agent.NewAgent(config)
+	app := agent.NewAgent(cfg)
 	app.Run(ctx)
 }
