@@ -67,8 +67,9 @@ func (s *server) shutdown() {
 	}
 
 	if err := s.http.Shutdown(context.Background()); err != nil {
-		s.logger.Errorf("HTTP server shutdown error: %v", err)
+		s.logger.Errorf("http server shutdown error: %v", err)
 	}
+	s.logger.Info("shutdown completed")
 }
 
 func (s *server) Run(ctx context.Context) error {

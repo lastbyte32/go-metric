@@ -26,5 +26,5 @@ func main() {
 	defer ctxCancel()
 
 	app := server.NewServer(cfg)
-	log.Panic(app.Run(ctx))
+	log.Fatal(app.Run(ctx))
 }

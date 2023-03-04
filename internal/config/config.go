@@ -8,17 +8,6 @@ import (
 	"github.com/caarlos0/env/v7"
 )
 
-/*
-Не смог побороть циклический импорт
-Вынес конфиг в отдельный пакет
-Далее думаю все же убрать отдельный конфиг для агента и сделать из этого пакета общий
-
-	type Configurator interface {
-		IServer
-		IAgent
-		IStorage
-	}
-*/
 type Configurator interface {
 	GetAddress() string
 	GetStoreInterval() time.Duration
@@ -55,15 +44,6 @@ func (c *config) GetAddress() string {
 func (c *config) GetStoreInterval() time.Duration {
 	return c.StoreInterval
 }
-
-// Из за этого метода появляется циклический импорт, да и мне тоже не нравится возвращать тип из другого пакета
-//func (c *config) GetStorageType() storage.Type {
-//	if c.StoreFile == "" {
-//		return storage.MEMORY
-//	}
-//	return storage.FILE
-//}
-// TODO удалю этот код после ревью
 
 func (c *config) env() error {
 	if err := env.Parse(c); err != nil {

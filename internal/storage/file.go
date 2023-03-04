@@ -14,16 +14,14 @@ import (
 )
 
 const (
-	WRITE = os.O_WRONLY | os.O_CREATE
-	READ  = os.O_RDONLY
-	PERM  = 0644
+	writeOrCreateMode      = os.O_WRONLY | os.O_CREATE
+	readOnlyMode           = os.O_RDONLY
+	filePermissionsDefault = 0644
 )
 
 type fileStorage struct {
 	*memoryStorage
-	file       string
-	interval   time.Duration
-	isRestore  bool
+	pathToFile string
 	fileMutex  sync.RWMutex
 	logger     *zap.SugaredLogger
 	hash       string
@@ -40,18 +38,18 @@ func (store *fileStorage) Close() error {
 }
 
 func (store *fileStorage) openFile(mode int) (*os.File, error) {
-	file, err := os.OpenFile(store.file, mode, PERM)
+	file, err := os.OpenFile(store.pathToFile, mode, filePermissionsDefault)
 	if err != nil {
-		store.logger.Infof("err open file: %s, [%s]", store.file, err.Error())
+		store.logger.Infof("err open pathToFile: %s, [%s]", store.pathToFile, err.Error())
 		return nil, err
 	}
 	return file, err
 }
 
-func (store *fileStorage) storeWorkerOnInterval() {
-	store.logger.Infof("store worker start, interval: %.0fs", store.interval.Seconds())
+func (store *fileStorage) storeWorkerOnInterval(interval time.Duration) {
+	store.logger.Infof("store worker start, interval: %.0fs", interval.Seconds())
 	go func() {
-		ticker := time.NewTicker(store.interval)
+		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
 		for {
 			select {
@@ -90,7 +88,7 @@ func (store *fileStorage) saveInFile() error {
 
 	store.fileMutex.Lock()
 	defer store.fileMutex.Unlock()
-	file, err := store.openFile(WRITE)
+	file, err := store.openFile(writeOrCreateMode)
 	if err != nil {
 		return err
 	}
@@ -108,10 +106,10 @@ func (store *fileStorage) saveInFile() error {
 }
 
 func (store *fileStorage) restore() {
-	store.logger.Infof("restore from file: %s", store.file)
+	store.logger.Infof("restore from file: %s", store.pathToFile)
 	store.fileMutex.RLock()
 	defer store.fileMutex.RUnlock()
-	file, err := store.openFile(READ)
+	file, err := store.openFile(readOnlyMode)
 	if err != nil {
 		return
 	}
@@ -153,18 +151,17 @@ func NewFileStorage(l *zap.SugaredLogger, config config.Configurator) IStorage {
 			values: make(map[string]metric.IMetric),
 		},
 		logger:     l,
-		interval:   config.GetStoreInterval(),
-		file:       config.GetStoreFile(),
-		isRestore:  config.IsRestore(),
+		pathToFile: config.GetStoreFile(),
 		stopWorker: channel,
 	}
 
-	if store.isRestore {
+	if config.IsRestore() {
 		store.restore()
 	}
+	storeInterval := config.GetStoreInterval()
 
-	if store.interval != 0 {
-		store.storeWorkerOnInterval()
+	if storeInterval != 0 {
+		store.storeWorkerOnInterval(storeInterval)
 	}
 
 	return store

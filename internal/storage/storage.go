@@ -9,6 +9,11 @@ import (
 
 type Type int
 
+const (
+	MEMORY Type = iota
+	FILE
+)
+
 type IStorage interface {
 	Get(name string) (metric.IMetric, bool)
 	All() map[string]metric.IMetric
@@ -16,26 +21,20 @@ type IStorage interface {
 	Close() error
 }
 
-// TODO удалю этот код после ревью
-//const (
-//	MEMORY Type = iota
-//	FILE
-//)
-//func New(config config.Configurator, logger *zap.SugaredLogger) IStorage {
-//
-//	switch config.GetStorageType() {
-//	case MEMORY:
-//		return NewMemoryStorage(logger)
-//	case FILE:
-//		return NewFileStorage(logger, config)
-//	default:
-//		return NewMemoryStorage(logger)
-//	}
-//}
-
 func New(config config.Configurator, logger *zap.SugaredLogger) IStorage {
-	if config.GetStoreFile() != "" {
+	switch getStorageType(config) {
+	case MEMORY:
+		return NewMemoryStorage(logger)
+	case FILE:
 		return NewFileStorage(logger, config)
+	default:
+		return NewMemoryStorage(logger)
 	}
-	return NewMemoryStorage(logger)
+}
+
+func getStorageType(config config.Configurator) Type {
+	if config.GetStoreFile() == "" {
+		return MEMORY
+	}
+	return FILE
 }
