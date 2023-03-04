@@ -1,57 +1,76 @@
 package agent
 
 import (
+	"flag"
 	"fmt"
 	"time"
+
+	"github.com/caarlos0/env/v7"
 )
 
-type Configurator interface {
+type IConfigurator interface {
 	getAddress() string
 	getReportInterval() time.Duration
 	getReportTimeout() time.Duration
 	getPollInterval() time.Duration
 }
 
+const (
+	addressDefault        = "127.0.0.1:8080"
+	reportIntervalDefault = 10 * time.Second
+	pollIntervalDefault   = 2 * time.Second
+	reportTimeoutDefault  = 20 * time.Second
+)
+
 type config struct {
-	address        string
-	reportInterval time.Duration
-	reportTimeout  time.Duration
-	pollInterval   time.Duration
+	Address        string        `env:"ADDRESS"`
+	ReportInterval time.Duration `env:"REPORT_INTERVAL"`
+	ReportTimeout  time.Duration `env:"REPORT_TIMEOUT" envDefault:"20s"`
+	PollInterval   time.Duration `env:"POLL_INTERVAL"`
 }
 
 func (c *config) getAddress() string {
-	return c.address
+	return c.Address
 }
 
 func (c *config) getReportInterval() time.Duration {
-	return c.reportInterval
+	return c.ReportInterval
 }
 
 func (c *config) getReportTimeout() time.Duration {
-	return c.reportTimeout
+	return c.ReportTimeout
 }
 
 func (c *config) getPollInterval() time.Duration {
-	return c.pollInterval
+	return c.PollInterval
 }
 
-func (c *config) defaultConfigParam() {
-	const (
-		address        = "127.0.0.1:8080"
-		reportInterval = 10
-		pollInterval   = 2
-		reportTimeout  = 20
-	)
-	c.address = address
-	c.reportInterval = time.Second * reportInterval
-	c.reportTimeout = time.Second * reportTimeout
-	c.pollInterval = time.Second * pollInterval
+func (c *config) env() error {
+	if err := env.Parse(c); err != nil {
+		return err
+	}
+	return nil
 }
 
-func NewConfig() (*config, error) {
-	//Todo: Реализовать загрузку "конфига" из файла/флагов/окружения
+func (c *config) flags() {
+	flag.StringVar(&c.Address, "a", addressDefault, "metric server address")
+	flag.DurationVar(&c.ReportInterval, "r", reportIntervalDefault, "report interval")
+	flag.DurationVar(&c.PollInterval, "p", pollIntervalDefault, "poll interval")
+	flag.DurationVar(&c.ReportTimeout, "t", reportTimeoutDefault, "report timeout")
+	flag.Parse()
+}
+
+func NewConfig() (IConfigurator, error) {
 	c := &config{}
-	c.defaultConfigParam()
-	fmt.Printf("*Configuration used*\n\t- Server: %s\n\t- ReportInterval: %.0fs\n\t- PollInterval: %.0fs\n", c.address, c.reportInterval.Seconds(), c.pollInterval.Seconds())
+	c.flags()
+	err := c.env()
+	if err != nil {
+		return nil, err
+	}
+	fmt.Printf("*Configuration used*\n\t- Server: %s\n\t- ReportInterval: %.0fs\n\t- PollInterval: %.0fs\n",
+		c.Address,
+		c.ReportInterval.Seconds(),
+		c.PollInterval.Seconds(),
+	)
 	return c, nil
 }

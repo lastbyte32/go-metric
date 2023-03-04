@@ -1,7 +1,7 @@
 package metric
 
 import (
-	"fmt"
+	"encoding/json"
 	"github.com/lastbyte32/go-metric/internal/utils"
 )
 
@@ -20,7 +20,7 @@ func (g *gauge) GetType() MType {
 }
 
 func (g *gauge) ToString() string {
-	return fmt.Sprintf("%.3f", g.value)
+	return utils.FloatToString(g.value)
 }
 
 func (g *gauge) SetValue(value string) error {
@@ -32,7 +32,15 @@ func (g *gauge) SetValue(value string) error {
 	return nil
 }
 
-func NewGauge(name string, value float64) Metric {
+func (g *gauge) MarshalJSON() ([]byte, error) {
+	return json.Marshal(Metrics{
+		ID:    g.name,
+		MType: string(GAUGE),
+		Value: &g.value,
+	})
+}
+
+func NewGauge(name string, value float64) IMetric {
 	return &gauge{
 		name,
 		GAUGE,

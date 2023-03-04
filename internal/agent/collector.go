@@ -35,6 +35,8 @@ func getMemStat() map[string]float64 {
 		"StackInuse":    float64(memStats.StackInuse),
 		"StackSys":      float64(memStats.StackSys),
 		"Sys":           float64(memStats.Sys),
+		"MSpanInuse":    float64(memStats.MSpanInuse),
+		"MSpanSys":      float64(memStats.MSpanSys),
 		"TotalAlloc":    float64(memStats.TotalAlloc),
 	}
 }

@@ -1,39 +1,92 @@
 package server
 
 import (
+	"context"
 	"errors"
-	"fmt"
+	"log"
+	"net/http"
+	"os"
+
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"go.uber.org/zap"
+
+	"github.com/lastbyte32/go-metric/internal/config"
 	"github.com/lastbyte32/go-metric/internal/server/handlers"
-	"github.com/lastbyte32/go-metric/internal/server/storage"
-	"net/http"
+	customMiddleware "github.com/lastbyte32/go-metric/internal/server/middleware"
+	"github.com/lastbyte32/go-metric/internal/storage"
 )
 
-func Run(config Configurator) error {
-	ms := storage.NewMemoryStorage()
+type server struct {
+	http   *http.Server
+	store  storage.IStorage
+	logger *zap.SugaredLogger
+}
 
-	handler := handlers.NewHandler(ms)
+func NewServer(config config.Configurator) *server {
+
+	l, err := zap.NewDevelopment()
+	if err != nil {
+		log.Fatalf("error on create logger: %v", err)
+	}
+	logger := l.Sugar()
+	defer logger.Sync()
+
+	store := storage.New(config, logger)
+
+	handler := handlers.NewHandler(store, logger)
 	router := chi.NewRouter()
-	router.Use(middleware.Logger, middleware.Recoverer)
+	router.Use(
+		customMiddleware.Compressor,
+		middleware.Logger,
+		middleware.Recoverer,
+	)
+
 	router.Group(func(r chi.Router) {
 		r.Get("/", handler.Index)
 		r.Get("/value/{type}/{name}", handler.GetMetric)
 		r.Post("/update/{type}/{name}/{value}", handler.UpdateMetric)
+		r.Post("/update/", handler.UpdateMetricFromJSON)
+		r.Post("/value/", handler.GetMetricFromJSON)
 	})
 
-	srv := &http.Server{
-		Addr:    config.getAddress(),
+	httpServer := &http.Server{
+		Addr:    config.GetAddress(),
 		Handler: router,
 	}
+	return &server{
+		http:   httpServer,
+		logger: logger,
+		store:  store,
+	}
+}
 
-	err := srv.ListenAndServe()
+func (s *server) shutdown() {
+	if err := s.store.Close(); err != nil {
+		s.logger.Errorf("store shutdown error: %v", err)
+	}
+
+	if err := s.http.Shutdown(context.Background()); err != nil {
+		s.logger.Errorf("http server shutdown error: %v", err)
+	}
+	s.logger.Info("shutdown completed")
+}
+
+func (s *server) Run(ctx context.Context) error {
+	go func() {
+		s.logger.Info("start shutdown watcher")
+		<-ctx.Done()
+		s.logger.Info("Received signal, stopping application")
+		s.shutdown()
+	}()
+	s.logger.Info("http server run")
+	err := s.http.ListenAndServe()
 	if errors.Is(err, http.ErrServerClosed) {
-		return errors.New("server closed")
-	} else if err != nil {
+		s.logger.Info("HTTP server stopped successfully")
+		os.Exit(0)
+	} else {
 		return err
 	}
 
-	fmt.Println("Server listen on " + config.getAddress())
 	return nil
 }

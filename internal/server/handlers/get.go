@@ -1,28 +1,56 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
-	"github.com/go-chi/chi"
-	"github.com/lastbyte32/go-metric/internal/metric"
 	"net/http"
+
+	"github.com/go-chi/chi"
+
+	"github.com/lastbyte32/go-metric/internal/metric"
 )
 
+func (h *handler) GetMetricFromJSON(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var inputMetric metric.Metrics
+	if err := json.NewDecoder(r.Body).Decode(&inputMetric); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	mType := metric.MType(inputMetric.MType)
+	if mType != metric.COUNTER && mType != metric.GAUGE {
+		fmt.Println("invalid_type")
+		http.Error(w, "invalid_type", http.StatusNotImplemented)
+		return
+	}
+
+	m, exist := h.metricsStorage.Get(inputMetric.ID)
+	if !exist {
+		http.Error(w, "metric not found", http.StatusNotFound)
+		return
+	}
+	jsonBody, err := json.Marshal(m)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("err: %s", err.Error()), http.StatusInternalServerError)
+		return
+	}
+	w.Write(jsonBody)
+}
+
 func (h *handler) GetMetric(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("GetMetric")
+	h.logger.Info("http GetMetric")
 	mType := metric.MType(chi.URLParam(r, "type"))
 	if mType != metric.COUNTER && mType != metric.GAUGE {
-		w.WriteHeader(http.StatusNotImplemented)
+		http.Error(w, "invalid_type", http.StatusNotImplemented)
 		return
 	}
 
 	metricName := chi.URLParam(r, "name")
 	m, exist := h.metricsStorage.Get(metricName)
 	if !exist {
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte("metric not found"))
+		http.Error(w, "metric not found", http.StatusNotFound)
 		return
 	}
-
-	w.Header().Set("Content-Type", "text/plain")
 	w.Write([]byte(m.ToString()))
 }

@@ -1,8 +1,13 @@
 package main
 
 import (
-	"github.com/lastbyte32/go-metric/internal/agent"
+	"context"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
+
+	"github.com/lastbyte32/go-metric/internal/agent"
 )
 
 func main() {
@@ -10,6 +15,15 @@ func main() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
+
+	ctx, ctxCancel := signal.NotifyContext(context.Background(),
+		os.Interrupt,
+		syscall.SIGTERM,
+		syscall.SIGINT,
+		syscall.SIGQUIT,
+	)
+
+	defer ctxCancel()
 	app := agent.NewAgent(config)
-	app.Run()
+	app.Run(ctx)
 }

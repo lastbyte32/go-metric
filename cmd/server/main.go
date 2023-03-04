@@ -1,18 +1,30 @@
 package main
 
 import (
-	"fmt"
-	"github.com/lastbyte32/go-metric/internal/server"
+	"context"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
+
+	"github.com/lastbyte32/go-metric/internal/config"
+	"github.com/lastbyte32/go-metric/internal/server"
 )
 
 func main() {
-	config, err := server.NewConfig()
+	cfg, err := config.NewConfig()
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	err = server.Run(config)
-	if err != nil {
-		fmt.Printf("metric server err: %v", err)
-	}
+
+	ctx, ctxCancel := signal.NotifyContext(context.Background(),
+		os.Interrupt,
+		syscall.SIGTERM,
+		syscall.SIGINT,
+		syscall.SIGQUIT,
+	)
+	defer ctxCancel()
+
+	app := server.NewServer(cfg)
+	log.Fatal(app.Run(ctx))
 }

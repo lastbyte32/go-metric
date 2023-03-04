@@ -1,15 +1,19 @@
 package handlers
 
 import (
-	"github.com/lastbyte32/go-metric/internal/server/storage"
+	"go.uber.org/zap"
+
+	"github.com/lastbyte32/go-metric/internal/storage"
 )
 
 type handler struct {
-	metricsStorage storage.Storage
+	metricsStorage storage.IStorage
+	logger         *zap.SugaredLogger
 }
 
-func NewHandler(storage storage.Storage) *handler {
+func NewHandler(s storage.IStorage, l *zap.SugaredLogger) *handler {
 	return &handler{
-		storage,
+		metricsStorage: s,
+		logger:         l,
 	}
 }

@@ -1,0 +1,40 @@
+package storage
+
+import (
+	"go.uber.org/zap"
+
+	"github.com/lastbyte32/go-metric/internal/config"
+	"github.com/lastbyte32/go-metric/internal/metric"
+)
+
+type Type int
+
+const (
+	MEMORY Type = iota
+	FILE
+)
+
+type IStorage interface {
+	Get(name string) (metric.IMetric, bool)
+	All() map[string]metric.IMetric
+	Update(name string, value string, metricType metric.MType) error
+	Close() error
+}
+
+func New(config config.Configurator, logger *zap.SugaredLogger) IStorage {
+	switch getStorageType(config) {
+	case MEMORY:
+		return NewMemoryStorage(logger)
+	case FILE:
+		return NewFileStorage(logger, config)
+	default:
+		return NewMemoryStorage(logger)
+	}
+}
+
+func getStorageType(config config.Configurator) Type {
+	if config.GetStoreFile() == "" {
+		return MEMORY
+	}
+	return FILE
+}
