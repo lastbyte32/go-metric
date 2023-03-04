@@ -62,18 +62,15 @@ func NewServer(config config.Configurator) *server {
 }
 
 func (s *server) shutdown() {
-	s.logger.Info("shutdown application")
-
-	err := s.store.Close()
-	if err != nil {
+	if err := s.store.Close(); err != nil {
 		s.logger.Errorf("store shutdown error: %v", err)
 	}
 
-	err = s.http.Shutdown(context.Background())
-	if err != nil {
+	if err := s.http.Shutdown(context.Background()); err != nil {
 		s.logger.Errorf("HTTP server shutdown error: %v", err)
 	}
 }
+
 func (s *server) Run(ctx context.Context) error {
 	go func() {
 		s.logger.Info("start shutdown watcher")

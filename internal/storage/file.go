@@ -31,7 +31,6 @@ type fileStorage struct {
 }
 
 func (store *fileStorage) Close() error {
-	store.logger.Info("shutdown close")
 	store.stopWorker <- 1
 	close(store.stopWorker)
 	err := store.saveInFile()
