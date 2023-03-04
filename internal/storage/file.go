@@ -33,8 +33,7 @@ type fileStorage struct {
 func (store *fileStorage) Close() error {
 	store.stopWorker <- 1
 	close(store.stopWorker)
-	err := store.saveInFile()
-	if err != nil {
+	if err := store.saveInFile(); err != nil {
 		return err
 	}
 	return nil
@@ -126,8 +125,7 @@ func (store *fileStorage) restore() {
 	}
 
 	for _, item := range metricsFromFile {
-		err := store.Update(item.ID, item.GetValueAsString(), metric.MType(item.MType))
-		if err != nil {
+		if err := store.Update(item.ID, item.GetValueAsString(), metric.MType(item.MType)); err != nil {
 			store.logger.Infof("update %s", err.Error())
 			return
 		}
@@ -139,12 +137,11 @@ func (store *fileStorage) getHash(data []byte) string {
 }
 
 func (store *fileStorage) hasChanges(data []byte) bool {
-	hash := store.getHash(data)
-	if hash == store.hash {
-		return false
+	if hash := store.getHash(data); hash != store.hash {
+		store.hash = hash
+		return true
 	}
-	store.hash = hash
-	return true
+	return false
 }
 
 func NewFileStorage(l *zap.SugaredLogger, config config.Configurator) IStorage {
