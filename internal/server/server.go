@@ -47,6 +47,7 @@ func NewServer(config config.Configurator) *server {
 		r.Get("/value/{type}/{name}", handler.GetMetric)
 		r.Post("/update/{type}/{name}/{value}", handler.UpdateMetric)
 		r.Post("/update/", handler.UpdateMetricFromJSON)
+		r.Post("/updates/", handler.UpdatesMetricFromJSON)
 		r.Post("/value/", handler.GetMetricFromJSON)
 	})
 

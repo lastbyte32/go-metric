@@ -1,11 +1,13 @@
 package storage
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"sync"
+	"time"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
+	_ "github.com/jackc/pgx/v5/stdlib" //
 	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"
 
@@ -13,12 +15,21 @@ import (
 	"github.com/lastbyte32/go-metric/internal/metric"
 )
 
-const (
-	sqlUpdateCounter = `UPDATE metrics SET counter = ? WHERE id = ?`
-	sqlUpdateGauge   = `UPDATE metrics SET gauge = ? WHERE id = ?`
+const dbTimeoutDefault = time.Second * 10
 
-	sqlInsertCounter = `INSERT INTO metrics (id, mtype, counter) VALUES(?,?,?)`
-	sqlInsertGauge   = `INSERT INTO metrics (id, mtype, gauge) VALUES(?,?,?)`
+const (
+	sqlCreateTable = `CREATE TABLE IF NOT EXISTS metrics (
+	id varchar(255) NOT NULL,
+	mtype varchar(255) NOT NULL,
+	gauge double precision,
+	counter bigint,
+	CONSTRAINT metrics_pkey PRIMARY KEY (id))`
+	sqlGetMetric     = `SELECT * FROM metrics WHERE id = $1`
+	sqlAllMetrics    = `SELECT * FROM metrics`
+	sqlUpdateCounter = `UPDATE metrics SET counter = $1 WHERE id = $2`
+	sqlUpdateGauge   = `UPDATE metrics SET gauge = cast($1 as double precision) WHERE id = $2`
+	sqlInsertCounter = `INSERT INTO metrics (id, mtype, counter) VALUES($1,$2,$3)`
+	sqlInsertGauge   = `INSERT INTO metrics (id, mtype, gauge) VALUES($1,$2,$3)`
 )
 
 type sqlStorage struct {
@@ -37,28 +48,29 @@ type rowMetric struct {
 
 func (store *sqlStorage) Get(name string) (metric.IMetric, bool) {
 	store.logger.Infof("store: get %s", name)
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeoutDefault)
+	defer cancel()
 	var row rowMetric
-
-	err := store.db.Get(&row, "SELECT * FROM metrics WHERE id = $1", name)
+	err := store.db.GetContext(ctx, &row, sqlGetMetric, name)
 	if err != nil {
 		store.logger.Infof("get err: %s", err)
 		return nil, false
 	}
 	switch row.Mtype {
 	case metric.GAUGE:
-
 		return metric.NewGauge(name, row.Gauge.Float64), true
 	case metric.COUNTER:
 		return metric.NewCounter(name, row.Counter.Int64), true
 	default:
 		return nil, false
 	}
-
 }
 
 func (store *sqlStorage) All() map[string]metric.IMetric {
 	var rows []rowMetric
-	if err := store.db.Select(&rows, "SELECT * FROM metrics"); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeoutDefault)
+	defer cancel()
+	if err := store.db.SelectContext(ctx, &rows, sqlAllMetrics); err != nil {
 		return nil
 	}
 	metrics := make(map[string]metric.IMetric)
@@ -92,15 +104,17 @@ func (store *sqlStorage) Update(name string, value string, metricType metric.MTy
 	sqlQuery := ""
 	switch metricType {
 	case metric.GAUGE:
-		sqlQuery = `UPDATE metrics SET gauge = cast($1 as double precision) WHERE id = $2`
+		sqlQuery = sqlUpdateGauge
 	case metric.COUNTER:
-		sqlQuery = `UPDATE metrics SET counter = $1 WHERE id = $2`
+		sqlQuery = sqlUpdateCounter
 	default:
 		return errors.New("unknown type")
 	}
 	store.logger.Infof("SQL: %s, value %s -> %v", sqlQuery, name, value)
 
-	_, err = store.db.Exec(sqlQuery, oneMetric.ToString(), name)
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeoutDefault)
+	defer cancel()
+	_, err = store.db.ExecContext(ctx, sqlQuery, oneMetric.ToString(), name)
 	if err != nil {
 		store.logger.Error(err)
 		return err
@@ -114,13 +128,15 @@ func (store *sqlStorage) insert(name string, value string, metricType metric.MTy
 	sqlQuery := ""
 	switch metricType {
 	case metric.GAUGE:
-		sqlQuery = `INSERT INTO metrics (id, mtype, gauge) VALUES($1,$2,$3)`
+		sqlQuery = sqlInsertGauge
 	case metric.COUNTER:
-		sqlQuery = `INSERT INTO metrics (id, mtype, counter) VALUES($1,$2,$3)`
+		sqlQuery = sqlInsertCounter
 	default:
 		return errors.New("unknown type")
 	}
-	_, err := store.db.Exec(sqlQuery, name, metricType, value)
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeoutDefault)
+	defer cancel()
+	_, err := store.db.ExecContext(ctx, sqlQuery, name, metricType, value)
 	if err != nil {
 		store.logger.Error(err)
 		return err
@@ -137,7 +153,7 @@ func (store *sqlStorage) Close() error {
 }
 
 func NewSQLStorage(l *zap.SugaredLogger, config config.Configurator) IStorage {
-	db, err := sqlx.Connect("pgx", config.GetDSN())
+	db, err := connect(config.GetDSN())
 	if err != nil {
 		//return nil, err
 		l.Error(err)
@@ -157,26 +173,14 @@ func NewSQLStorage(l *zap.SugaredLogger, config config.Configurator) IStorage {
 func (store *sqlStorage) migration() error {
 	store.logger.Info("Migration")
 
-	createTable := `CREATE TABLE IF NOT EXISTS metrics (
-	id varchar(255) NOT NULL,
-	mtype varchar(255) NOT NULL,
-	gauge double precision,
-	counter bigint,
-	CONSTRAINT metrics_pkey PRIMARY KEY (id))`
-	//dropTableIfExisis := `DROP TABLE IF EXISTS metrics`
-	//createCounterTable := `CREATE TABLE IF NOT EXISTS metrics (name VARCHAR (128) UNIQUE NOT NULL, value BIGINT NOT NULL)`
-	//createGaugeTable := `CREATE TABLE IF NOT EXISTS gauge    (name VARCHAR (128) UNIQUE NOT NULL, value DOUBLE PRECISION NOT NULL)`
-
 	migrations := [...]string{
-		//dropTableIfExisis,
-		createTable,
-		//createCounterTable,
-		//createGaugeTable,
+		sqlCreateTable,
 	}
-
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeoutDefault)
+	defer cancel()
 	for result, migration := range migrations {
 		store.logger.Infof("SQL: %s", migration)
-		_, err := store.db.Exec(migration)
+		_, err := store.db.ExecContext(ctx, migration)
 		if err != nil {
 			return err
 		}
@@ -185,8 +189,16 @@ func (store *sqlStorage) migration() error {
 	return nil
 }
 
-func Ping(dsn string) error {
+func connect(dsn string) (*sqlx.DB, error) {
 	db, err := sqlx.Connect("pgx", dsn)
+	if err != nil {
+		return nil, err
+	}
+	return db, nil
+}
+
+func Ping(dsn string) error {
+	db, err := connect(dsn)
 	if err != nil {
 		return err
 	}

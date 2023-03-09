@@ -11,6 +11,32 @@ import (
 	"github.com/lastbyte32/go-metric/internal/utils"
 )
 
+func (h *handler) UpdatesMetricFromJSON(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var metrics []metric.Metrics
+	if err := json.NewDecoder(r.Body).Decode(&metrics); err != nil {
+		h.logger.Infof("Batch json decode: %s", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	for _, m := range metrics {
+		h.logger.Info(m.ID)
+		var value = ""
+		mtype := metric.MType(m.MType)
+		switch mtype {
+		case metric.COUNTER:
+			value = fmt.Sprintf("%d", *m.Delta)
+		case metric.GAUGE:
+			value = utils.FloatToString(*m.Value)
+		}
+
+		if err := h.metricsStorage.Update(m.ID, value, mtype); err != nil {
+			h.logger.Info(fmt.Sprintf("err: %s", err.Error()), http.StatusBadRequest)
+		}
+	}
+	w.Write([]byte("{}"))
+}
+
 func (h *handler) UpdateMetricFromJSON(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -43,33 +69,14 @@ func (h *handler) UpdateMetricFromJSON(w http.ResponseWriter, r *http.Request) {
 		value = fmt.Sprintf("%d", *m.Delta)
 	case metric.GAUGE:
 		value = utils.FloatToString(*m.Value)
-		//default:
-		//	fmt.Println("invalid_type")
-		//	http.Error(w, "invalid_type", http.StatusNotImplemented)
-		//	return
 	}
 
 	if err := h.metricsStorage.Update(m.ID, value, mtype); err != nil {
 		http.Error(w, fmt.Sprintf("err: %s", err.Error()), http.StatusBadRequest)
 		return
 	}
-	h.logger.Info("get after update")
+	w.Write([]byte("{}"))
 
-	// тут пропускаем ошибку потому что выше проверили удачный ли апдейт
-	updatedMetric, _ := h.metricsStorage.Get(m.ID)
-	if h.config.IsToSign() {
-		err := updatedMetric.SetHash(h.config.GetKey())
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	}
-	jsonBody, err := json.Marshal(updatedMetric)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("err: %s", err.Error()), http.StatusInternalServerError)
-		return
-	}
-	w.Write(jsonBody)
 }
 
 func (h *handler) UpdateMetric(w http.ResponseWriter, r *http.Request) {
