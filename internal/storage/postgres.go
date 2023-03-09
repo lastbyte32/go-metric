@@ -2,9 +2,7 @@ package storage
 
 import (
 	"database/sql"
-	"encoding/json"
 	"errors"
-	"os"
 	"sync"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -153,9 +151,6 @@ func NewSQLStorage(l *zap.SugaredLogger, config config.Configurator) IStorage {
 	if err := store.migration(); err != nil {
 		l.Error(err)
 	}
-	if config.IsRestore() {
-		store.restore()
-	}
 	return store
 }
 
@@ -190,36 +185,13 @@ func (store *sqlStorage) migration() error {
 	return nil
 }
 
-func (store *sqlStorage) openFile(mode int) (*os.File, error) {
-	file, err := os.OpenFile(store.pathToFile, mode, filePermissionsDefault)
+func Ping(dsn string) error {
+	db, err := sqlx.Connect("pgx", dsn)
 	if err != nil {
-		store.logger.Infof("err open pathToFile: %s, [%s]", store.pathToFile, err.Error())
-		return nil, err
+		return err
 	}
-	return file, err
-}
-
-func (store *sqlStorage) restore() {
-	store.logger.Infof("restore from file: %s", store.pathToFile)
-	store.fileMutex.RLock()
-	defer store.fileMutex.RUnlock()
-	file, err := store.openFile(readOnlyMode)
-	if err != nil {
-		return
+	if err := db.Ping(); err != nil {
+		return err
 	}
-	defer file.Close()
-
-	metricsFromFile := make(map[string]metric.Metrics)
-	err = json.NewDecoder(file).Decode(&metricsFromFile)
-	if err != nil {
-		store.logger.Infof("file decode err: %s", err)
-		return
-	}
-
-	for _, item := range metricsFromFile {
-		if err := store.Update(item.ID, item.GetValueAsString(), metric.MType(item.MType)); err != nil {
-			store.logger.Infof("update %s", err.Error())
-			return
-		}
-	}
+	return nil
 }

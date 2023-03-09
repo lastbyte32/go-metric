@@ -30,6 +30,15 @@ func (h *handler) GetMetricFromJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "metric not found", http.StatusNotFound)
 		return
 	}
+
+	if h.config.IsToSign() {
+		err := m.SetHash(h.config.GetKey())
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
 	jsonBody, err := json.Marshal(m)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("err: %s", err.Error()), http.StatusInternalServerError)

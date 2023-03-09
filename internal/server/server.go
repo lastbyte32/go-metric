@@ -50,6 +50,18 @@ func NewServer(config config.Configurator) *server {
 		r.Post("/value/", handler.GetMetricFromJSON)
 	})
 
+	router.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
+		if config.GetDSN() == "" {
+			http.Error(w, "no db", http.StatusNotImplemented)
+			return
+		}
+
+		if err := storage.Ping(config.GetDSN()); err != nil {
+			http.Error(w, "db err", http.StatusInternalServerError)
+			return
+		}
+	})
+
 	httpServer := &http.Server{
 		Addr:    config.GetAddress(),
 		Handler: router,
