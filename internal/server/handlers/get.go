@@ -35,6 +35,7 @@ func (h *handler) GetMetricFromJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("err: %s", err.Error()), http.StatusInternalServerError)
 		return
 	}
+	h.logger.Infof("req [%s:%s] output: [%s:%s] %s", inputMetric.ID, inputMetric.MType, m.GetName(), m.GetType(), m.ToString())
 	w.Write(jsonBody)
 }
 

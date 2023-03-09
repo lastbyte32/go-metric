@@ -15,20 +15,20 @@ const (
 )
 
 type Metrics struct {
-	ID    string  `json:"id"`              // имя метрики
-	MType string  `json:"type"`            // параметр, принимающий значение gauge или counter
-	Delta int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
-	Value float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
-	Hash  string  `json:"hash,omitempty"`  // значение хеш-функции
+	ID    string   `json:"id"`              // имя метрики
+	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
+	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
+	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
+	Hash  string   `json:"hash,omitempty"`  // значение хеш-функции
 }
 
 func (m *Metrics) GetValueAsString() string {
 	// Или этот метод нужен только в рамках файлового хранилища и его нужно имплементировать там?
 	switch MType(m.MType) {
 	case COUNTER:
-		return fmt.Sprintf("%d", m.Delta)
+		return fmt.Sprintf("%d", *m.Delta)
 	case GAUGE:
-		return utils.FloatToString(m.Value)
+		return utils.FloatToString(*m.Value)
 	default:
 		return ""
 	}

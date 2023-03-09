@@ -40,9 +40,9 @@ func (h *handler) UpdateMetricFromJSON(w http.ResponseWriter, r *http.Request) {
 	var value = ""
 	switch mtype {
 	case metric.COUNTER:
-		value = fmt.Sprintf("%d", m.Delta)
+		value = fmt.Sprintf("%d", *m.Delta)
 	case metric.GAUGE:
-		value = utils.FloatToString(m.Value)
+		value = utils.FloatToString(*m.Value)
 		//default:
 		//	fmt.Println("invalid_type")
 		//	http.Error(w, "invalid_type", http.StatusNotImplemented)

@@ -49,7 +49,7 @@ func (g *gauge) MarshalJSON() ([]byte, error) {
 	return json.Marshal(Metrics{
 		ID:    g.name,
 		MType: string(GAUGE),
-		Value: g.value,
+		Value: &g.value,
 		Hash:  g.hash,
 	})
 }
