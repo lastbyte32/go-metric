@@ -20,7 +20,7 @@ type Configurator interface {
 
 const (
 	addressDefault       = "127.0.0.1:8080"
-	storeIntervalDefault = 10 * time.Second
+	storeIntervalDefault = 300 * time.Second
 	storeFileDefault     = "/tmp/devops-metrics-db.json"
 	restoreDefault       = false
 	keyDefault           = ""
@@ -89,9 +89,11 @@ func NewConfig() (Configurator, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("*Configuration used*\n\t- Address: %s\n\t- StoreInterval: %.0fs\n",
+	fmt.Printf("*Server configuration used*\n\t- Address: %s\n\t- StoreInterval: %.0fs\n\t-StoreFile: %s\n\t-Restore: %v\n",
 		c.Address,
 		c.StoreInterval.Seconds(),
+		c.StoreFile,
+		c.Restore,
 	)
 	return c, nil
 }

@@ -168,12 +168,12 @@ func (store *sqlStorage) migration() error {
 	gauge double precision,
 	counter bigint,
 	CONSTRAINT metrics_pkey PRIMARY KEY (id))`
-	dropTableIfExisis := `DROP TABLE IF EXISTS metrics`
+	//dropTableIfExisis := `DROP TABLE IF EXISTS metrics`
 	//createCounterTable := `CREATE TABLE IF NOT EXISTS metrics (name VARCHAR (128) UNIQUE NOT NULL, value BIGINT NOT NULL)`
 	//createGaugeTable := `CREATE TABLE IF NOT EXISTS gauge    (name VARCHAR (128) UNIQUE NOT NULL, value DOUBLE PRECISION NOT NULL)`
 
 	migrations := [...]string{
-		dropTableIfExisis,
+		//dropTableIfExisis,
 		createTable,
 		//createCounterTable,
 		//createGaugeTable,
