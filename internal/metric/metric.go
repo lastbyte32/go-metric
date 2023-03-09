@@ -37,9 +37,9 @@ func (m *Metrics) GetValueAsString() string {
 func (m *Metrics) GetStringToSign() string {
 	switch MType(m.MType) {
 	case COUNTER:
-		return fmt.Sprintf("%s:%s:%d", m.ID, m.MType, m.Delta)
+		return fmt.Sprintf("%s:%s:%d", m.ID, m.MType, *m.Delta)
 	case GAUGE:
-		return fmt.Sprintf("%s:%s:%f", m.ID, m.MType, m.Value)
+		return fmt.Sprintf("%s:%s:%f", m.ID, m.MType, *m.Value)
 	default:
 		return ""
 	}
