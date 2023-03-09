@@ -10,8 +10,9 @@ import (
 type Type int
 
 const (
-	MEMORY Type = iota
+	MEMORY Type = 1 << iota
 	FILE
+	SQL
 )
 
 type IStorage interface {
@@ -27,14 +28,19 @@ func New(config config.Configurator, logger *zap.SugaredLogger) IStorage {
 		return NewMemoryStorage(logger)
 	case FILE:
 		return NewFileStorage(logger, config)
+	case SQL:
+		return NewSQLStorage(logger, config)
 	default:
 		return NewMemoryStorage(logger)
 	}
 }
 
 func getStorageType(config config.Configurator) Type {
-	if config.GetStoreFile() == "" {
-		return MEMORY
+	if config.GetDSN() != "" {
+		return SQL
 	}
-	return FILE
+	if config.GetStoreFile() != "" {
+		return FILE
+	}
+	return MEMORY
 }

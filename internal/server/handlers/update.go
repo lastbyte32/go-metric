@@ -26,12 +26,12 @@ func (h *handler) UpdateMetricFromJSON(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if h.config.IsToSign() && m.Hash != "" {
-		hash, err := utils.GetSha256Hash(m.GetStringToSign(), h.config.GetKey())
+		isVerify, err := m.VerifyHash(h.config.GetKey())
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		if m.Hash != hash {
+		if !isVerify {
 			http.Error(w, "hash not equal", http.StatusBadRequest)
 			return
 		}

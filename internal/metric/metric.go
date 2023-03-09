@@ -45,6 +45,17 @@ func (m *Metrics) GetStringToSign() string {
 	}
 }
 
+func (m *Metrics) VerifyHash(key string) (bool, error) {
+	hash, err := utils.GetSha256Hash(m.GetStringToSign(), key)
+	if err != nil {
+		return false, err
+	}
+	if m.Hash != hash {
+		return false, nil
+	}
+	return true, nil
+}
+
 type IMetric interface {
 	GetName() string
 	GetType() MType

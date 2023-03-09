@@ -15,6 +15,7 @@ type Configurator interface {
 	IsRestore() bool
 	GetKey() string
 	IsToSign() bool
+	GetDSN() string
 }
 
 const (
@@ -23,6 +24,7 @@ const (
 	storeFileDefault     = "/tmp/devops-metrics-db.json"
 	restoreDefault       = false
 	keyDefault           = ""
+	DatabaseDSNDefault   = ""
 )
 
 type config struct {
@@ -31,6 +33,7 @@ type config struct {
 	StoreFile     string        `env:"STORE_FILE"`
 	Restore       bool          `env:"RESTORE"`
 	Key           string        `env:"KEY"`
+	DSN           string        `env:"DATABASE_DSN"`
 }
 
 func (c *config) GetStoreFile() string {
@@ -53,6 +56,10 @@ func (c *config) GetKey() string {
 	return c.Key
 }
 
+func (c *config) GetDSN() string {
+	return c.DSN
+}
+
 func (c *config) IsToSign() bool {
 	return c.Key != ""
 }
@@ -70,6 +77,8 @@ func (c *config) flags() {
 	flag.BoolVar(&c.Restore, "r", restoreDefault, "restoreDefault metrics")
 	flag.DurationVar(&c.StoreInterval, "i", storeIntervalDefault, "store metrics on interval")
 	flag.StringVar(&c.Key, "k", keyDefault, "key for encrypt")
+	flag.StringVar(&c.DSN, "d", DatabaseDSNDefault, "dsn")
+
 	flag.Parse()
 }
 
