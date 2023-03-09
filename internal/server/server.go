@@ -39,7 +39,7 @@ func NewServer(config config.Configurator) *server {
 	router.Use(
 		customMiddleware.Compressor,
 		middleware.Logger,
-		middleware.Recoverer,
+		//	middleware.Recoverer,
 	)
 
 	router.Group(func(r chi.Router) {

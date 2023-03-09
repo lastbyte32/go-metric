@@ -40,20 +40,20 @@ func (h *handler) UpdateMetricFromJSON(w http.ResponseWriter, r *http.Request) {
 	var value = ""
 	switch mtype {
 	case metric.COUNTER:
-		value = fmt.Sprintf("%d", *m.Delta)
+		value = fmt.Sprintf("%d", m.Delta)
 	case metric.GAUGE:
-		value = utils.FloatToString(*m.Value)
-	default:
-		fmt.Println("invalid_type")
-		http.Error(w, "invalid_type", http.StatusNotImplemented)
-		return
+		value = utils.FloatToString(m.Value)
+		//default:
+		//	fmt.Println("invalid_type")
+		//	http.Error(w, "invalid_type", http.StatusNotImplemented)
+		//	return
 	}
 
-	err := h.metricsStorage.Update(m.ID, value, mtype)
-	if err != nil {
+	if err := h.metricsStorage.Update(m.ID, value, mtype); err != nil {
 		http.Error(w, fmt.Sprintf("err: %s", err.Error()), http.StatusBadRequest)
 		return
 	}
+	h.logger.Info("get after update")
 
 	// тут пропускаем ошибку потому что выше проверили удачный ли апдейт
 	updatedMetric, _ := h.metricsStorage.Get(m.ID)

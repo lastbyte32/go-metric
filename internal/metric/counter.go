@@ -50,7 +50,7 @@ func (c *counter) MarshalJSON() ([]byte, error) {
 	return json.Marshal(Metrics{
 		ID:    c.name,
 		MType: string(COUNTER),
-		Delta: &c.value,
+		Delta: c.value,
 		Hash:  c.hash,
 	})
 }

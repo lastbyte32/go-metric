@@ -2,7 +2,10 @@ package storage
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
+	"os"
+	"sync"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
@@ -21,8 +24,10 @@ const (
 )
 
 type sqlStorage struct {
-	db     *sqlx.DB
-	logger *zap.SugaredLogger
+	db         *sqlx.DB
+	logger     *zap.SugaredLogger
+	pathToFile string
+	fileMutex  sync.RWMutex
 }
 
 type rowMetric struct {
@@ -72,12 +77,20 @@ func (store *sqlStorage) All() map[string]metric.IMetric {
 }
 
 func (store *sqlStorage) Update(name string, value string, metricType metric.MType) error {
-	_, ok := store.Get(name)
+	store.logger.Infof("Update [%s] %s -> %s", metricType, name, value)
+	oneMetric, ok := store.Get(name)
 	if !ok {
-		if err := store.insert(name, value, metricType); err != nil {
-			return err
-		}
+		store.insert(name, value, metricType)
+		return nil
 	}
+	store.logger.Infof("SetValue [%s] %s -> %s", metricType, name, value)
+
+	err := oneMetric.SetValue(value)
+	if err != nil {
+		return err
+	}
+	store.logger.Infof("SetValue END [%s] %s -> %s", metricType, name, value)
+
 	sqlQuery := ""
 	switch metricType {
 	case metric.GAUGE:
@@ -89,7 +102,7 @@ func (store *sqlStorage) Update(name string, value string, metricType metric.MTy
 	}
 	store.logger.Infof("SQL: %s, value %s -> %v", sqlQuery, name, value)
 
-	_, err := store.db.Exec(sqlQuery, value, name)
+	_, err = store.db.Exec(sqlQuery, oneMetric.ToString(), name)
 	if err != nil {
 		store.logger.Error(err)
 		return err
@@ -98,6 +111,8 @@ func (store *sqlStorage) Update(name string, value string, metricType metric.MTy
 }
 
 func (store *sqlStorage) insert(name string, value string, metricType metric.MType) error {
+	store.logger.Infof("INSERT %s -> %s", name, value)
+
 	sqlQuery := ""
 	switch metricType {
 	case metric.GAUGE:
@@ -130,16 +145,17 @@ func NewSQLStorage(l *zap.SugaredLogger, config config.Configurator) IStorage {
 		l.Error(err)
 	}
 	store := &sqlStorage{
-		db:     db,
-		logger: l,
+		pathToFile: config.GetStoreFile(),
+		db:         db,
+		logger:     l,
 	}
 
 	if err := store.migration(); err != nil {
-		//return nil, err
 		l.Error(err)
-
 	}
-
+	if config.IsRestore() {
+		store.restore()
+	}
 	return store
 }
 
@@ -172,4 +188,38 @@ func (store *sqlStorage) migration() error {
 		store.logger.Infof("Row: %d", result)
 	}
 	return nil
+}
+
+func (store *sqlStorage) openFile(mode int) (*os.File, error) {
+	file, err := os.OpenFile(store.pathToFile, mode, filePermissionsDefault)
+	if err != nil {
+		store.logger.Infof("err open pathToFile: %s, [%s]", store.pathToFile, err.Error())
+		return nil, err
+	}
+	return file, err
+}
+
+func (store *sqlStorage) restore() {
+	store.logger.Infof("restore from file: %s", store.pathToFile)
+	store.fileMutex.RLock()
+	defer store.fileMutex.RUnlock()
+	file, err := store.openFile(readOnlyMode)
+	if err != nil {
+		return
+	}
+	defer file.Close()
+
+	metricsFromFile := make(map[string]metric.Metrics)
+	err = json.NewDecoder(file).Decode(&metricsFromFile)
+	if err != nil {
+		store.logger.Infof("file decode err: %s", err)
+		return
+	}
+
+	for _, item := range metricsFromFile {
+		if err := store.Update(item.ID, item.GetValueAsString(), metric.MType(item.MType)); err != nil {
+			store.logger.Infof("update %s", err.Error())
+			return
+		}
+	}
 }
