@@ -80,12 +80,10 @@ func (h *handler) UpdateMetricFromJSON(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) UpdateMetric(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("UpdateHandle")
 	metricType := metric.MType(chi.URLParam(r, "type"))
 	metricName := chi.URLParam(r, "name")
 
 	if metricType != metric.COUNTER && metricType != metric.GAUGE {
-		fmt.Println("invalid_type")
 		http.Error(w, "invalid_type", http.StatusNotImplemented)
 		return
 	}
