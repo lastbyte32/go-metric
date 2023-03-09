@@ -13,6 +13,8 @@ type Configurator interface {
 	GetStoreInterval() time.Duration
 	GetStoreFile() string
 	IsRestore() bool
+	GetKey() string
+	IsToSign() bool
 }
 
 const (
@@ -20,6 +22,7 @@ const (
 	storeIntervalDefault = 10 * time.Second
 	storeFileDefault     = "/tmp/devops-metrics-db.json"
 	restoreDefault       = false
+	keyDefault           = ""
 )
 
 type config struct {
@@ -27,6 +30,7 @@ type config struct {
 	StoreInterval time.Duration `env:"STORE_INTERVAL"`
 	StoreFile     string        `env:"STORE_FILE"`
 	Restore       bool          `env:"RESTORE"`
+	Key           string        `env:"KEY"`
 }
 
 func (c *config) GetStoreFile() string {
@@ -45,6 +49,14 @@ func (c *config) GetStoreInterval() time.Duration {
 	return c.StoreInterval
 }
 
+func (c *config) GetKey() string {
+	return c.Key
+}
+
+func (c *config) IsToSign() bool {
+	return c.Key != ""
+}
+
 func (c *config) env() error {
 	if err := env.Parse(c); err != nil {
 		return err
@@ -57,6 +69,7 @@ func (c *config) flags() {
 	flag.StringVar(&c.StoreFile, "f", storeFileDefault, "store metrics in file")
 	flag.BoolVar(&c.Restore, "r", restoreDefault, "restoreDefault metrics")
 	flag.DurationVar(&c.StoreInterval, "i", storeIntervalDefault, "store metrics on interval")
+	flag.StringVar(&c.Key, "k", keyDefault, "key for encrypt")
 	flag.Parse()
 }
 

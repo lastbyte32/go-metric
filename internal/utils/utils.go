@@ -1,8 +1,11 @@
 package utils
 
 import (
+	"crypto/hmac"
 	"crypto/md5"
+	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"strconv"
 )
@@ -37,4 +40,18 @@ func GetMD5Sum(data []byte) []byte {
 
 func GetMD5Hash(data []byte) string {
 	return hex.EncodeToString(GetMD5Sum(data))
+}
+
+func GetSha256Hash(part, key string) (string, error) {
+	if key == "" {
+		return "", errors.New("empty key")
+	}
+
+	h := hmac.New(sha256.New, []byte(key))
+
+	if _, err := h.Write([]byte(part)); err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(h.Sum(nil)), nil
 }

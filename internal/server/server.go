@@ -34,7 +34,7 @@ func NewServer(config config.Configurator) *server {
 
 	store := storage.New(config, logger)
 
-	handler := handlers.NewHandler(store, logger)
+	handler := handlers.NewHandler(store, logger, config)
 	router := chi.NewRouter()
 	router.Use(
 		customMiddleware.Compressor,

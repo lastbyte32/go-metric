@@ -57,6 +57,13 @@ func (a *agent) transmitPlainText(m metric.IMetric) error {
 func (a *agent) transmitJSON(m metric.IMetric) error {
 	url := fmt.Sprintf("http://%s/update/", a.config.getAddress())
 
+	if a.config.isToSign() {
+		err := m.SetHash(a.config.getKey())
+		if err != nil {
+			return err
+		}
+	}
+
 	body, err := json.Marshal(&m)
 	if err != nil {
 		log.Printf("Error in JSON marshal. Err: %s", err)

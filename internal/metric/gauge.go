@@ -2,6 +2,8 @@ package metric
 
 import (
 	"encoding/json"
+	"fmt"
+
 	"github.com/lastbyte32/go-metric/internal/utils"
 )
 
@@ -9,6 +11,17 @@ type gauge struct {
 	name      string
 	valueType MType
 	value     float64
+	hash      string
+}
+
+func (g *gauge) SetHash(key string) error {
+	part := fmt.Sprintf("%s:%s:%f", g.name, g.valueType, g.value)
+	hash, err := utils.GetSha256Hash(part, key)
+	if err != nil {
+		return err
+	}
+	g.hash = hash
+	return nil
 }
 
 func (g *gauge) GetName() string {
@@ -37,13 +50,14 @@ func (g *gauge) MarshalJSON() ([]byte, error) {
 		ID:    g.name,
 		MType: string(GAUGE),
 		Value: &g.value,
+		Hash:  g.hash,
 	})
 }
 
 func NewGauge(name string, value float64) IMetric {
 	return &gauge{
-		name,
-		GAUGE,
-		value,
+		name:      name,
+		valueType: GAUGE,
+		value:     value,
 	}
 }

@@ -3,6 +3,7 @@ package metric
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/lastbyte32/go-metric/internal/utils"
 )
 
@@ -10,6 +11,17 @@ type counter struct {
 	name      string
 	valueType MType
 	value     int64
+	hash      string
+}
+
+func (c *counter) SetHash(key string) error {
+	part := fmt.Sprintf("%s:%s:%d", c.name, c.valueType, c.value)
+	hash, err := utils.GetSha256Hash(part, key)
+	if err != nil {
+		return err
+	}
+	c.hash = hash
+	return nil
 }
 
 func (c *counter) GetName() string {
@@ -25,7 +37,6 @@ func (c *counter) ToString() string {
 }
 
 func (c *counter) SetValue(value string) error {
-	//fmt.Println("Increase")
 	s, err := utils.StringToInt64(value)
 	if err != nil {
 		fmt.Println("COUNTER err parse")
@@ -40,13 +51,14 @@ func (c *counter) MarshalJSON() ([]byte, error) {
 		ID:    c.name,
 		MType: string(COUNTER),
 		Delta: &c.value,
+		Hash:  c.hash,
 	})
 }
 
 func NewCounter(name string, value int64) IMetric {
 	return &counter{
-		name,
-		COUNTER,
-		value,
+		name:      name,
+		valueType: COUNTER,
+		value:     value,
 	}
 }

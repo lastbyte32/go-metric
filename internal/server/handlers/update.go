@@ -24,6 +24,19 @@ func (h *handler) UpdateMetricFromJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid_type", http.StatusNotImplemented)
 		return
 	}
+
+	if h.config.IsToSign() && m.Hash != "" {
+		hash, err := utils.GetSha256Hash(m.GetStringToSign(), h.config.GetKey())
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if m.Hash != hash {
+			http.Error(w, "hash not equal", http.StatusBadRequest)
+			return
+		}
+	}
+
 	var value = ""
 	switch mtype {
 	case metric.COUNTER:
@@ -44,6 +57,13 @@ func (h *handler) UpdateMetricFromJSON(w http.ResponseWriter, r *http.Request) {
 
 	// тут пропускаем ошибку потому что выше проверили удачный ли апдейт
 	updatedMetric, _ := h.metricsStorage.Get(m.ID)
+	if h.config.IsToSign() {
+		err := updatedMetric.SetHash(h.config.GetKey())
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
 	jsonBody, err := json.Marshal(updatedMetric)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("err: %s", err.Error()), http.StatusInternalServerError)

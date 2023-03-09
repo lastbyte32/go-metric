@@ -19,6 +19,7 @@ type Metrics struct {
 	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
 	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
 	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
+	Hash  string   `json:"hash,omitempty"`  // значение хеш-функции
 }
 
 func (m *Metrics) GetValueAsString() string {
@@ -33,12 +34,24 @@ func (m *Metrics) GetValueAsString() string {
 	}
 }
 
+func (m *Metrics) GetStringToSign() string {
+	switch MType(m.MType) {
+	case COUNTER:
+		return fmt.Sprintf("%s:%s:%d", m.ID, m.MType, *m.Delta)
+	case GAUGE:
+		return fmt.Sprintf("%s:%s:%f", m.ID, m.MType, *m.Value)
+	default:
+		return ""
+	}
+}
+
 type IMetric interface {
 	GetName() string
 	GetType() MType
 	ToString() string
 	MarshalJSON() ([]byte, error)
 	SetValue(value string) error
+	SetHash(key string) error
 }
 
 func NewByString(name string, value string, metricType MType) (IMetric, error) {
