@@ -39,7 +39,7 @@ func (h *handler) GetMetricFromJSON(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	jsonBody, err := json.Marshal(m)
+	jsonBody, err := json.Marshal(&m)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("err: %s", err.Error()), http.StatusInternalServerError)
 		return
