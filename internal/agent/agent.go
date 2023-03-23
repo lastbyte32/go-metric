@@ -14,11 +14,17 @@ import (
 	"github.com/lastbyte32/go-metric/internal/storage"
 )
 
+type Job struct {
+	Body string
+	URL  string
+}
+
 type agent struct {
 	ms     storage.IStorage
 	client *resty.Client
 	config IConfigurator
 	logger *zap.SugaredLogger
+	jobCh  chan *Job
 }
 
 func NewAgent(config IConfigurator) *agent {
@@ -38,19 +44,46 @@ func NewAgent(config IConfigurator) *agent {
 		config: config,
 		ms:     memory,
 		logger: logger,
+		jobCh:  make(chan *Job),
+	}
+}
+
+func (a *agent) addJob(url, body string) {
+	a.jobCh <- &Job{
+		Body: body,
+		URL:  url,
+	}
+}
+
+func (a *agent) sender(ctx context.Context, num int) {
+	a.logger.Info("start sender #", num)
+	for {
+		select {
+		case <-ctx.Done():
+			a.logger.Info("stop sender #", num)
+			return
+		default:
+			for job := range a.jobCh {
+				a.sendToServer(job)
+			}
+		}
+	}
+}
+
+func (a *agent) sendToServer(job *Job) {
+	_, err := a.client.R().
+		SetHeader("Content-Type", "text/plain").
+		SetBody(job.Body).
+		Post(job.URL)
+	if err != nil {
+		fmt.Println("sender err: ", err)
+		return
 	}
 }
 
 func (a *agent) transmitPlainText(m metric.IMetric) error {
 	url := fmt.Sprintf("http://%s/update/%s/%s/%s", a.config.getAddress(), m.GetType(), m.GetName(), m.ToString())
-
-	_, err := a.client.R().
-		SetHeader("Content-Type", "text/plain").
-		SetBody(m.ToString()).
-		Post(url)
-	if err != nil {
-		return err
-	}
+	a.addJob(url, "")
 	return nil
 }
 
@@ -69,15 +102,7 @@ func (a *agent) transmitJSON(m metric.IMetric) error {
 		log.Printf("Error in JSON marshal. Err: %s", err)
 		return err
 	}
-
-	fmt.Println(string(body))
-	_, err = a.client.R().
-		SetHeader("Content-Type", "application/json").
-		SetBody(body).
-		Post(url)
-	if err != nil {
-		return err
-	}
+	a.addJob(url, string(body))
 	return nil
 }
 
@@ -152,16 +177,22 @@ func (a *agent) Run(ctx context.Context) {
 		reportTimer.Stop()
 	}()
 
+	for i := 0; i < a.config.getRateLimit(); i++ {
+		senderNum := i
+		go a.sender(ctx, senderNum)
+	}
+
 	for {
 		select {
 		case <-ctx.Done():
+			close(a.jobCh)
 			a.logger.Info("shutdown agent")
 			return
 		case <-poolTimer.C:
 			a.Pool()
 		case <-reportTimer.C:
 			a.sendReport()
-			a.sendAllReport()
+			//a.sendAllReport()
 		}
 	}
 }

@@ -15,6 +15,7 @@ type IConfigurator interface {
 	getPollInterval() time.Duration
 	getKey() string
 	isToSign() bool
+	getRateLimit() int
 }
 
 const (
@@ -23,6 +24,7 @@ const (
 	pollIntervalDefault   = 2 * time.Second
 	reportTimeoutDefault  = 20 * time.Second
 	keyDefault            = ""
+	RateLimitDefault      = 10
 )
 
 type config struct {
@@ -31,6 +33,11 @@ type config struct {
 	ReportTimeout  time.Duration `env:"REPORT_TIMEOUT" envDefault:"20s"`
 	PollInterval   time.Duration `env:"POLL_INTERVAL"`
 	Key            string        `env:"KEY"`
+	RateLimit      int           `env:"RATE_LIMIT"`
+}
+
+func (c *config) getRateLimit() int {
+	return c.RateLimit
 }
 
 func (c *config) getAddress() string {
@@ -70,7 +77,7 @@ func (c *config) flags() {
 	flag.DurationVar(&c.PollInterval, "p", pollIntervalDefault, "poll interval")
 	flag.DurationVar(&c.ReportTimeout, "t", reportTimeoutDefault, "report timeout")
 	flag.StringVar(&c.Key, "k", keyDefault, "key for encrypt")
-
+	flag.IntVar(&c.RateLimit, "l", RateLimitDefault, "RateLimit")
 	flag.Parse()
 }
 
