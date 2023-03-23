@@ -122,15 +122,7 @@ func (a *agent) sendAllReport() {
 		return
 	}
 
-	fmt.Println(string(body))
-	_, err = a.client.R().
-		SetHeader("Content-Type", "application/json").
-		SetBody(body).
-		Post(url)
-	if err != nil {
-		a.logger.Info(err)
-		return
-	}
+	a.addJob(url, string(body))
 }
 
 func (a *agent) sendReport() {
@@ -192,7 +184,7 @@ func (a *agent) Run(ctx context.Context) {
 			a.Pool()
 		case <-reportTimer.C:
 			a.sendReport()
-			//a.sendAllReport()
+			a.sendAllReport()
 		}
 	}
 }
