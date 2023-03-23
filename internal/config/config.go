@@ -13,13 +13,18 @@ type Configurator interface {
 	GetStoreInterval() time.Duration
 	GetStoreFile() string
 	IsRestore() bool
+	GetKey() string
+	IsToSign() bool
+	GetDSN() string
 }
 
 const (
 	addressDefault       = "127.0.0.1:8080"
-	storeIntervalDefault = 10 * time.Second
+	storeIntervalDefault = 300 * time.Second
 	storeFileDefault     = "/tmp/devops-metrics-db.json"
 	restoreDefault       = false
+	keyDefault           = ""
+	DatabaseDSNDefault   = ""
 )
 
 type config struct {
@@ -27,6 +32,8 @@ type config struct {
 	StoreInterval time.Duration `env:"STORE_INTERVAL"`
 	StoreFile     string        `env:"STORE_FILE"`
 	Restore       bool          `env:"RESTORE"`
+	Key           string        `env:"KEY"`
+	DSN           string        `env:"DATABASE_DSN"`
 }
 
 func (c *config) GetStoreFile() string {
@@ -45,6 +52,18 @@ func (c *config) GetStoreInterval() time.Duration {
 	return c.StoreInterval
 }
 
+func (c *config) GetKey() string {
+	return c.Key
+}
+
+func (c *config) GetDSN() string {
+	return c.DSN
+}
+
+func (c *config) IsToSign() bool {
+	return c.Key != ""
+}
+
 func (c *config) env() error {
 	if err := env.Parse(c); err != nil {
 		return err
@@ -57,6 +76,9 @@ func (c *config) flags() {
 	flag.StringVar(&c.StoreFile, "f", storeFileDefault, "store metrics in file")
 	flag.BoolVar(&c.Restore, "r", restoreDefault, "restoreDefault metrics")
 	flag.DurationVar(&c.StoreInterval, "i", storeIntervalDefault, "store metrics on interval")
+	flag.StringVar(&c.Key, "k", keyDefault, "key for encrypt")
+	flag.StringVar(&c.DSN, "d", DatabaseDSNDefault, "dsn")
+
 	flag.Parse()
 }
 
@@ -67,9 +89,11 @@ func NewConfig() (Configurator, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("*Configuration used*\n\t- Address: %s\n\t- StoreInterval: %.0fs\n",
+	fmt.Printf("*Server configuration used*\n\t- Address: %s\n\t- StoreInterval: %.0fs\n\t-StoreFile: %s\n\t-Restore: %v\n",
 		c.Address,
 		c.StoreInterval.Seconds(),
+		c.StoreFile,
+		c.Restore,
 	)
 	return c, nil
 }

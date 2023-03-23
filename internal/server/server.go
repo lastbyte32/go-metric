@@ -34,12 +34,12 @@ func NewServer(config config.Configurator) *server {
 
 	store := storage.New(config, logger)
 
-	handler := handlers.NewHandler(store, logger)
+	handler := handlers.NewHandler(store, logger, config)
 	router := chi.NewRouter()
 	router.Use(
 		customMiddleware.Compressor,
 		middleware.Logger,
-		middleware.Recoverer,
+		//	middleware.Recoverer,
 	)
 
 	router.Group(func(r chi.Router) {
@@ -47,7 +47,20 @@ func NewServer(config config.Configurator) *server {
 		r.Get("/value/{type}/{name}", handler.GetMetric)
 		r.Post("/update/{type}/{name}/{value}", handler.UpdateMetric)
 		r.Post("/update/", handler.UpdateMetricFromJSON)
+		r.Post("/updates/", handler.UpdatesMetricFromJSON)
 		r.Post("/value/", handler.GetMetricFromJSON)
+	})
+
+	router.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
+		if config.GetDSN() == "" {
+			http.Error(w, "no db", http.StatusNotImplemented)
+			return
+		}
+
+		if err := storage.Ping(config.GetDSN()); err != nil {
+			http.Error(w, "db err", http.StatusInternalServerError)
+			return
+		}
 	})
 
 	httpServer := &http.Server{
