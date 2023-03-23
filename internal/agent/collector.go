@@ -1,8 +1,12 @@
 package agent
 
 import (
+	"fmt"
 	"math/rand"
 	"runtime"
+
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/mem"
 )
 
 func getMemStat() map[string]float64 {
@@ -39,4 +43,29 @@ func getMemStat() map[string]float64 {
 		"MSpanSys":      float64(memStats.MSpanSys),
 		"TotalAlloc":    float64(memStats.TotalAlloc),
 	}
+}
+
+func getMemory() map[string]float64 {
+	vm, err := mem.VirtualMemory()
+	if err != nil {
+		return map[string]float64{}
+	}
+
+	return map[string]float64{
+		"TotalMemory": float64(vm.Total),
+		"FreeMemory":  float64(vm.Free),
+	}
+}
+
+func getCPU() map[string]float64 {
+	metrics := make(map[string]float64)
+	cpuCount, err := cpu.Percent(0, true)
+	if err != nil {
+		return metrics
+	}
+
+	for i, c := range cpuCount {
+		metrics[fmt.Sprintf("CPUutilization%d", i+1)] = c
+	}
+	return metrics
 }

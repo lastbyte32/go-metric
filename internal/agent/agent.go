@@ -121,6 +121,13 @@ func (a *agent) sendReport() {
 func (a *agent) Pool() {
 	memStats := getMemStat()
 
+	for n, v := range getCPU() {
+		memStats[n] = v
+	}
+	for n, v := range getMemory() {
+		memStats[n] = v
+	}
+
 	for n, v := range memStats {
 		value := fmt.Sprintf("%.3f", v)
 		err := a.ms.Update(n, value, metric.GAUGE)
