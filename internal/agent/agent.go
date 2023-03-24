@@ -14,7 +14,7 @@ import (
 	"github.com/lastbyte32/go-metric/internal/storage"
 )
 
-type Job struct {
+type Request struct {
 	Body string
 	URL  string
 }
@@ -24,11 +24,10 @@ type agent struct {
 	client *resty.Client
 	config IConfigurator
 	logger *zap.SugaredLogger
-	jobCh  chan *Job
+	ReqCh  chan *Request
 }
 
 func NewAgent(config IConfigurator) *agent {
-
 	l, err := zap.NewDevelopment()
 	if err != nil {
 		log.Fatalf("error on create logger: %v", err)
@@ -44,12 +43,12 @@ func NewAgent(config IConfigurator) *agent {
 		config: config,
 		ms:     memory,
 		logger: logger,
-		jobCh:  make(chan *Job),
+		ReqCh:  make(chan *Request),
 	}
 }
 
-func (a *agent) addJob(url, body string) {
-	a.jobCh <- &Job{
+func (a *agent) addRequest(url, body string) {
+	a.ReqCh <- &Request{
 		Body: body,
 		URL:  url,
 	}
@@ -63,14 +62,14 @@ func (a *agent) sender(ctx context.Context, num int) {
 			a.logger.Info("stop sender #", num)
 			return
 		default:
-			for job := range a.jobCh {
-				a.sendToServer(job)
+			for job := range a.ReqCh {
+				a.transmit(job)
 			}
 		}
 	}
 }
 
-func (a *agent) sendToServer(job *Job) {
+func (a *agent) transmit(job *Request) {
 	_, err := a.client.R().
 		SetHeader("Content-Type", "text/plain").
 		SetBody(job.Body).
@@ -81,13 +80,13 @@ func (a *agent) sendToServer(job *Job) {
 	}
 }
 
-func (a *agent) transmitPlainText(m metric.IMetric) error {
+func (a *agent) makePlainTextRequest(m metric.IMetric) error {
 	url := fmt.Sprintf("http://%s/update/%s/%s/%s", a.config.getAddress(), m.GetType(), m.GetName(), m.ToString())
-	a.addJob(url, "")
+	a.addRequest(url, "")
 	return nil
 }
 
-func (a *agent) transmitJSON(m metric.IMetric) error {
+func (a *agent) makeJSONRequest(m metric.IMetric) error {
 	url := fmt.Sprintf("http://%s/update/", a.config.getAddress())
 
 	if a.config.isToSign() {
@@ -102,7 +101,7 @@ func (a *agent) transmitJSON(m metric.IMetric) error {
 		log.Printf("Error in JSON marshal. Err: %s", err)
 		return err
 	}
-	a.addJob(url, string(body))
+	a.addRequest(url, string(body))
 	return nil
 }
 
@@ -122,13 +121,13 @@ func (a *agent) sendAllReport() {
 		return
 	}
 
-	a.addJob(url, string(body))
+	a.addRequest(url, string(body))
 }
 
 func (a *agent) sendReport() {
 	fmt.Println("sendReportALL")
 	for _, m := range a.ms.All() {
-		err := a.transmitJSON(m)
+		err := a.makeJSONRequest(m)
 		if err != nil {
 			fmt.Printf("err send [%s]: %v\n", m.GetName(), err)
 		}
@@ -177,7 +176,7 @@ func (a *agent) Run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			close(a.jobCh)
+			close(a.ReqCh)
 			a.logger.Info("shutdown agent")
 			return
 		case <-poolTimer.C:
