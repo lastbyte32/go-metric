@@ -54,12 +54,12 @@ func (a *agent) addRequest(url, body string) {
 	}
 }
 
-func (a *agent) sender(ctx context.Context, num int) {
-	a.logger.Info("start sender #", num)
+func (a *agent) transmitWorker(ctx context.Context, num int) {
+	a.logger.Info("start transmitWorker #", num)
 	for {
 		select {
 		case <-ctx.Done():
-			a.logger.Info("stop sender #", num)
+			a.logger.Info("stop transmitWorker #", num)
 			return
 		default:
 			for job := range a.ReqCh {
@@ -75,7 +75,7 @@ func (a *agent) transmit(job *Request) {
 		SetBody(job.Body).
 		Post(job.URL)
 	if err != nil {
-		fmt.Println("sender err: ", err)
+		fmt.Println("transmitWorker err: ", err)
 		return
 	}
 }
@@ -161,15 +161,15 @@ func (a *agent) statWorker(ctx context.Context, getStat func() map[string]float6
 func (a *agent) Run(ctx context.Context) {
 	a.logger.Info("Agent start")
 	reportTimer := time.NewTicker(a.config.getReportInterval())
-
 	defer reportTimer.Stop()
 
 	go a.statWorker(ctx, getMemory)
 	go a.statWorker(ctx, getRunTimeStat)
+	go a.statWorker(ctx, getCPU)
 
 	for i := 0; i < a.config.getRateLimit(); i++ {
-		senderNum := i
-		go a.sender(ctx, senderNum)
+		workerNum := i
+		go a.transmitWorker(ctx, workerNum)
 	}
 
 	for {
