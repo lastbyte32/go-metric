@@ -7,8 +7,8 @@ import (
 )
 
 func TestGetMemStat(t *testing.T) {
-	m := getMemStat()
-	assert.NotNil(t, m, "getMemStat should not return nil")
+	m := getRunTimeStat()
+	assert.NotNil(t, m, "getRunTimeStat should not return nil")
 
 	keys := []string{"RandomValue", "Alloc", "BuckHashSys", "Frees", "GCCPUFraction", "GCSys", "HeapAlloc", "HeapIdle", "HeapInuse", "HeapObjects", "HeapReleased", "HeapSys", "LastGC", "Lookups", "MCacheInuse", "MCacheSys", "Mallocs", "NextGC", "NumForcedGC", "NumGC", "OtherSys", "PauseTotalNs", "StackInuse", "StackSys", "Sys", "TotalAlloc"}
 	for _, key := range keys {

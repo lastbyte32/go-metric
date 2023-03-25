@@ -134,39 +134,38 @@ func (a *agent) sendReport() {
 	}
 }
 
-func (a *agent) Pool() {
-	memStats := getMemStat()
-
-	for n, v := range getCPU() {
-		memStats[n] = v
-	}
-	for n, v := range getMemory() {
-		memStats[n] = v
-	}
-
-	for n, v := range memStats {
-		value := fmt.Sprintf("%.3f", v)
-		err := a.ms.Update(n, value, metric.GAUGE)
-		if err != nil {
-			fmt.Printf("err update %s", n)
+func (a *agent) statWorker(ctx context.Context, getStat func() map[string]float64) {
+	a.logger.Info("statWorker start")
+	poolTimer := time.NewTicker(a.config.getPollInterval())
+	defer poolTimer.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			a.logger.Info("shutdown statWorker")
+			return
+		case <-poolTimer.C:
+			for n, v := range getStat() {
+				value := fmt.Sprintf("%.3f", v)
+				err := a.ms.Update(n, value, metric.GAUGE)
+				if err != nil {
+					fmt.Printf("err update %s", n)
+				}
+			}
+			err := a.ms.Update("PollCount", "1", metric.COUNTER)
+			if err != nil {
+				fmt.Printf("err update %s", "PollCount")
+			}
 		}
 	}
-
-	err := a.ms.Update("PollCount", "1", metric.COUNTER)
-	if err != nil {
-		fmt.Printf("err update %s", "PollCount")
-	}
 }
-
 func (a *agent) Run(ctx context.Context) {
 	a.logger.Info("Agent start")
 	reportTimer := time.NewTicker(a.config.getReportInterval())
-	poolTimer := time.NewTicker(a.config.getPollInterval())
 
-	defer func() {
-		poolTimer.Stop()
-		reportTimer.Stop()
-	}()
+	defer reportTimer.Stop()
+
+	go a.statWorker(ctx, getMemory)
+	go a.statWorker(ctx, getRunTimeStat)
 
 	for i := 0; i < a.config.getRateLimit(); i++ {
 		senderNum := i
@@ -179,8 +178,6 @@ func (a *agent) Run(ctx context.Context) {
 			close(a.ReqCh)
 			a.logger.Info("shutdown agent")
 			return
-		case <-poolTimer.C:
-			a.Pool()
 		case <-reportTimer.C:
 			a.sendReport()
 			a.sendAllReport()
