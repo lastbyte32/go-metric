@@ -14,15 +14,20 @@ import (
 	"github.com/lastbyte32/go-metric/internal/storage"
 )
 
+type Request struct {
+	Body string
+	URL  string
+}
+
 type agent struct {
 	ms     storage.IStorage
 	client *resty.Client
 	config IConfigurator
 	logger *zap.SugaredLogger
+	ReqCh  chan *Request
 }
 
 func NewAgent(config IConfigurator) *agent {
-
 	l, err := zap.NewDevelopment()
 	if err != nil {
 		log.Fatalf("error on create logger: %v", err)
@@ -38,23 +43,50 @@ func NewAgent(config IConfigurator) *agent {
 		config: config,
 		ms:     memory,
 		logger: logger,
+		ReqCh:  make(chan *Request),
 	}
 }
 
-func (a *agent) transmitPlainText(m metric.IMetric) error {
-	url := fmt.Sprintf("http://%s/update/%s/%s/%s", a.config.getAddress(), m.GetType(), m.GetName(), m.ToString())
+func (a *agent) addRequest(url, body string) {
+	a.ReqCh <- &Request{
+		Body: body,
+		URL:  url,
+	}
+}
 
+func (a *agent) transmitWorker(ctx context.Context, num int) {
+	a.logger.Info("start transmitWorker #", num)
+	for {
+		select {
+		case <-ctx.Done():
+			a.logger.Info("stop transmitWorker #", num)
+			return
+		default:
+			for job := range a.ReqCh {
+				a.transmit(job)
+			}
+		}
+	}
+}
+
+func (a *agent) transmit(job *Request) {
 	_, err := a.client.R().
 		SetHeader("Content-Type", "text/plain").
-		SetBody(m.ToString()).
-		Post(url)
+		SetBody(job.Body).
+		Post(job.URL)
 	if err != nil {
-		return err
+		fmt.Println("transmitWorker err: ", err)
+		return
 	}
+}
+
+func (a *agent) makePlainTextRequest(m metric.IMetric) error {
+	url := fmt.Sprintf("http://%s/update/%s/%s/%s", a.config.getAddress(), m.GetType(), m.GetName(), m.ToString())
+	a.addRequest(url, "")
 	return nil
 }
 
-func (a *agent) transmitJSON(m metric.IMetric) error {
+func (a *agent) makeJSONRequest(m metric.IMetric) error {
 	url := fmt.Sprintf("http://%s/update/", a.config.getAddress())
 
 	if a.config.isToSign() {
@@ -69,15 +101,7 @@ func (a *agent) transmitJSON(m metric.IMetric) error {
 		log.Printf("Error in JSON marshal. Err: %s", err)
 		return err
 	}
-
-	fmt.Println(string(body))
-	_, err = a.client.R().
-		SetHeader("Content-Type", "application/json").
-		SetBody(body).
-		Post(url)
-	if err != nil {
-		return err
-	}
+	a.addRequest(url, string(body))
 	return nil
 }
 
@@ -97,61 +121,63 @@ func (a *agent) sendAllReport() {
 		return
 	}
 
-	fmt.Println(string(body))
-	_, err = a.client.R().
-		SetHeader("Content-Type", "application/json").
-		SetBody(body).
-		Post(url)
-	if err != nil {
-		a.logger.Info(err)
-		return
-	}
+	a.addRequest(url, string(body))
 }
 
 func (a *agent) sendReport() {
 	fmt.Println("sendReportALL")
 	for _, m := range a.ms.All() {
-		err := a.transmitJSON(m)
+		err := a.makeJSONRequest(m)
 		if err != nil {
 			fmt.Printf("err send [%s]: %v\n", m.GetName(), err)
 		}
 	}
 }
 
-func (a *agent) Pool() {
-	memStats := getMemStat()
-
-	for n, v := range memStats {
-		value := fmt.Sprintf("%.3f", v)
-		err := a.ms.Update(n, value, metric.GAUGE)
-		if err != nil {
-			fmt.Printf("err update %s", n)
+func (a *agent) statWorker(ctx context.Context, getStat func() map[string]float64) {
+	a.logger.Info("statWorker start")
+	poolTimer := time.NewTicker(a.config.getPollInterval())
+	defer poolTimer.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			a.logger.Info("shutdown statWorker")
+			return
+		case <-poolTimer.C:
+			for n, v := range getStat() {
+				value := fmt.Sprintf("%.3f", v)
+				err := a.ms.Update(n, value, metric.GAUGE)
+				if err != nil {
+					fmt.Printf("err update %s", n)
+				}
+			}
+			err := a.ms.Update("PollCount", "1", metric.COUNTER)
+			if err != nil {
+				fmt.Printf("err update %s", "PollCount")
+			}
 		}
 	}
-
-	err := a.ms.Update("PollCount", "1", metric.COUNTER)
-	if err != nil {
-		fmt.Printf("err update %s", "PollCount")
-	}
 }
-
 func (a *agent) Run(ctx context.Context) {
 	a.logger.Info("Agent start")
 	reportTimer := time.NewTicker(a.config.getReportInterval())
-	poolTimer := time.NewTicker(a.config.getPollInterval())
+	defer reportTimer.Stop()
 
-	defer func() {
-		poolTimer.Stop()
-		reportTimer.Stop()
-	}()
+	go a.statWorker(ctx, getMemory)
+	go a.statWorker(ctx, getRunTimeStat)
+	go a.statWorker(ctx, getCPU)
+
+	for i := 0; i < a.config.getRateLimit(); i++ {
+		workerNum := i
+		go a.transmitWorker(ctx, workerNum)
+	}
 
 	for {
 		select {
 		case <-ctx.Done():
+			close(a.ReqCh)
 			a.logger.Info("shutdown agent")
 			return
-		case <-poolTimer.C:
-			a.Pool()
 		case <-reportTimer.C:
 			a.sendReport()
 			a.sendAllReport()
