@@ -10,6 +10,7 @@ import (
 	"github.com/lastbyte32/go-metric/internal/agent"
 )
 
+// test
 func main() {
 	config, err := agent.NewConfig()
 	if err != nil {
