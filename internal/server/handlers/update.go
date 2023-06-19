@@ -34,7 +34,7 @@ func (h *handler) UpdatesMetricFromJSON(w http.ResponseWriter, r *http.Request) 
 			h.logger.Info(fmt.Sprintf("err: %s", err.Error()), http.StatusBadRequest)
 		}
 	}
-	w.Write([]byte("{}"))
+	//w.Write([]byte("{}"))
 }
 
 func (h *handler) UpdateMetricFromJSON(w http.ResponseWriter, r *http.Request) {
