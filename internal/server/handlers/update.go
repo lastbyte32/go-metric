@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/go-chi/chi"
@@ -34,7 +35,14 @@ func (h *handler) UpdatesMetricFromJSON(w http.ResponseWriter, r *http.Request) 
 			h.logger.Info(fmt.Sprintf("err: %s", err.Error()), http.StatusBadRequest)
 		}
 	}
-	//w.Write([]byte("{}"))
+
+	body, err := json.Marshal(&metrics)
+	if err != nil {
+		log.Printf("Error in JSON marshal. Err: %s", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	w.Write(body)
 }
 
 func (h *handler) UpdateMetricFromJSON(w http.ResponseWriter, r *http.Request) {
