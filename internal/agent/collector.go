@@ -50,11 +50,10 @@ func getMemory() map[string]float64 {
 	if err != nil {
 		return map[string]float64{}
 	}
-
-	return map[string]float64{
-		"TotalMemory": float64(vm.Total),
-		"FreeMemory":  float64(vm.Free),
-	}
+	metrics := make(map[string]float64, 2)
+	metrics["TotalMemory"] = float64(vm.Total)
+	metrics["FreeMemory"] = float64(vm.Free)
+	return metrics
 }
 
 func getCPU() map[string]float64 {
