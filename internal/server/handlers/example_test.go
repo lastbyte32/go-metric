@@ -14,11 +14,10 @@ type Metrics struct {
 	Value float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
 }
 
-func ExampleHandler_GetMetricFromJSON() {
+func Example_handler_GetMetricFromJSON() {
 	metric := Metrics{
 		ID:    "test_counter",
 		MType: "counter",
-		Delta: 100,
 	}
 	bodyJSON, err := json.Marshal(metric)
 	if err != nil {
