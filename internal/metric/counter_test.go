@@ -30,6 +30,8 @@ func TestCounter_SetValue(t *testing.T) {
 	assert.NoError(t, err)
 	expectedValue := int64(15)
 	assert.Equal(t, expectedValue, m.(*counter).value)
+	err = m.SetValue("bad")
+	assert.Error(t, err)
 }
 
 func TestCounter_MarshalJSON(t *testing.T) {

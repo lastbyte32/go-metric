@@ -57,6 +57,16 @@ func TestNewByString(t *testing.T) {
 			},
 			wantErr: true,
 		},
+
+		{
+			name: "test_wrong_type",
+			args: args{
+				name:       "test_counter",
+				value:      "wrong",
+				metricType: "wrong",
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

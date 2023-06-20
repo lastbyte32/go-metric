@@ -29,6 +29,8 @@ func TestGauge_SetValue(t *testing.T) {
 	assert.NoError(t, err)
 	expectedValue := 2.718
 	assert.Equal(t, expectedValue, m.(*gauge).value)
+	err = m.SetValue("bad")
+	assert.Error(t, err)
 }
 
 func TestGauge_MarshalJSON(t *testing.T) {
