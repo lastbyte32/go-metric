@@ -24,9 +24,11 @@ func ExampleGetMetricFromJSON() {
 	if err != nil {
 		log.Fatalf("error on marshal: %v", err)
 	}
-	if _, err := http.Post("http://example.com/value/", "application/json", bytes.NewBuffer(bodyJSON)); err != nil {
+	req, err := http.Post("http://example.com/value/", "application/json", bytes.NewBuffer(bodyJSON))
+	defer req.Body.Close()
+
+	if err != nil {
 		log.Fatalf("error in get metric: %v", err)
 	}
-
 	log.Printf("get metric from json successful")
 }

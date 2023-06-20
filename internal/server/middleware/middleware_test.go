@@ -22,9 +22,8 @@ func TestCompressor(t *testing.T) {
 
 	compressedHandler := Compressor(testHandler)
 	compressedHandler.ServeHTTP(recorder, request)
-
 	response := recorder.Result()
-
+	response.Body.Close()
 	assert.Equal(t, "gzip", response.Header.Get("Content-Encoding"))
 
 	gzipReader, err := gzip.NewReader(response.Body)
