@@ -106,3 +106,35 @@ func TestFloatToString(t *testing.T) {
 		})
 	}
 }
+
+func TestGetMD5Sum(t *testing.T) {
+	data := []byte("test")
+	expectedHash := []byte{0x9, 0x8f, 0x6b, 0xcd, 0x46, 0x21, 0xd3, 0x73, 0xca, 0xde, 0x4e, 0x83, 0x26, 0x27, 0xb4, 0xf6}
+
+	assert.Equal(t, expectedHash, GetMD5Sum(data))
+}
+
+func TestGetMD5Hash(t *testing.T) {
+	data := []byte("test")
+	expectedHash := "098f6bcd4621d373cade4e832627b4f6"
+	assert.Equal(t, expectedHash, GetMD5Hash(data))
+}
+
+func TestGetSha256Hash(t *testing.T) {
+	part := "test"
+	key := "mySecretKey"
+	expectedHash := "b8f312b17880338cc7855f5d30f6ccec42da0828bce4dc0eeab8ee0777c60af2"
+	hash, err := GetSha256Hash(part, key)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedHash, hash)
+}
+
+func TestGetSha256HashNegative(t *testing.T) {
+	part := "test"
+	key := ""
+	expectedError := "empty key"
+
+	_, err := GetSha256Hash(part, key)
+	assert.Error(t, err)
+	assert.EqualError(t, err, expectedError)
+}

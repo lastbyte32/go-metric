@@ -17,6 +17,7 @@ func responseIndex(w http.ResponseWriter, body string) {
 	w.Write([]byte(response.String()))
 }
 
+// Index - html страница с метриками
 func (h *handler) Index(w http.ResponseWriter, r *http.Request) {
 	var body strings.Builder
 	metrics := h.metricsStorage.All()
@@ -25,17 +26,14 @@ func (h *handler) Index(w http.ResponseWriter, r *http.Request) {
 		responseIndex(w, body.String())
 		return
 	}
-
 	var keys []string
 	for key := range metrics {
 		keys = append(keys, key)
 	}
 	sort.Strings(keys)
-
 	for _, k := range keys {
 		metric := metrics[k]
 		body.WriteString(fmt.Sprintf("<li><b>%s:</b> %s</li>", metric.GetName(), metric.ToString()))
-
 	}
 	responseIndex(w, body.String())
 }

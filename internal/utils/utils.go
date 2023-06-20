@@ -10,6 +10,7 @@ import (
 	"strconv"
 )
 
+// StringToFloat64 - функция преобразования строки в число с плавающей точкой
 func StringToFloat64(value string) (float64, error) {
 	f, err := strconv.ParseFloat(value, 64)
 	if err != nil {
@@ -19,6 +20,7 @@ func StringToFloat64(value string) (float64, error) {
 	return f, nil
 }
 
+// StringToInt64 - функция преобразования строки в число
 func StringToInt64(value string) (int64, error) {
 	f, err := strconv.ParseInt(value, 10, 64)
 	if err != nil {
@@ -28,20 +30,24 @@ func StringToInt64(value string) (int64, error) {
 	return f, nil
 }
 
+// FloatToString - функция преобразования числа в строку
 func FloatToString(value float64) string {
 	return strconv.FormatFloat(value, 'f', -1, 64)
 }
 
+// GetMD5Sum - функция получения MD5-хеша в виде слайса байт
 func GetMD5Sum(data []byte) []byte {
-	hash := md5.New()
+	hash := md5.New() //nolint:gosec
 	hash.Write(data)
 	return hash.Sum(nil)
 }
 
+// GetMD5Hash - функция получения MD5-хеша в виде строки
 func GetMD5Hash(data []byte) string {
 	return hex.EncodeToString(GetMD5Sum(data))
 }
 
+// GetSha256Hash - функция получения SHA-256-хеша
 func GetSha256Hash(part, key string) (string, error) {
 	if key == "" {
 		return "", errors.New("empty key")

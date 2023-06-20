@@ -1,3 +1,4 @@
+// Package agent Агент сбора и отправки метрик.
 package agent
 
 import (
@@ -14,9 +15,12 @@ import (
 	"github.com/lastbyte32/go-metric/internal/storage"
 )
 
+// Request - "джоба" с которой работает метод transmit
 type Request struct {
+	// Body - тело запроса
 	Body string
-	URL  string
+	// URL для отправки
+	URL string
 }
 
 type agent struct {
@@ -24,9 +28,10 @@ type agent struct {
 	client *resty.Client
 	config IConfigurator
 	logger *zap.SugaredLogger
-	ReqCh  chan *Request
+	reqCh  chan *Request
 }
 
+// NewAgent - Конструктор подготавливает основные структуры для работы агента
 func NewAgent(config IConfigurator) *agent {
 	l, err := zap.NewDevelopment()
 	if err != nil {
@@ -43,12 +48,12 @@ func NewAgent(config IConfigurator) *agent {
 		config: config,
 		ms:     memory,
 		logger: logger,
-		ReqCh:  make(chan *Request),
+		reqCh:  make(chan *Request),
 	}
 }
 
 func (a *agent) addRequest(url, body string) {
-	a.ReqCh <- &Request{
+	a.reqCh <- &Request{
 		Body: body,
 		URL:  url,
 	}
@@ -62,7 +67,7 @@ func (a *agent) transmitWorker(ctx context.Context, num int) {
 			a.logger.Info("stop transmitWorker #", num)
 			return
 		default:
-			for job := range a.ReqCh {
+			for job := range a.reqCh {
 				a.transmit(job)
 			}
 		}
@@ -158,6 +163,11 @@ func (a *agent) statWorker(ctx context.Context, getStat func() map[string]float6
 		}
 	}
 }
+
+// Run - Основной метод агента.
+// Запускает по горутине на каждую группу получаемых метрик
+// Также запускает N горутин которые читают "джоб"ы из канала и отправляют метрики на сервер
+// По таймеру "джоб"ы скаладываются в канал
 func (a *agent) Run(ctx context.Context) {
 	a.logger.Info("Agent start")
 	reportTimer := time.NewTicker(a.config.getReportInterval())
@@ -175,7 +185,7 @@ func (a *agent) Run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			close(a.ReqCh)
+			close(a.reqCh)
 			a.logger.Info("shutdown agent")
 			return
 		case <-reportTimer.C:

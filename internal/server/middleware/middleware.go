@@ -15,7 +15,6 @@ const (
 
 func Compressor(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 		if r.Header.Get("Content-Encoding") == compressMethod {
 			reader, err := gzip.NewReader(r.Body)
 			if err != nil {

@@ -56,15 +56,22 @@ func (m *Metrics) VerifyHash(key string) (bool, error) {
 	return true, nil
 }
 
+// IMetric - интерфейс метрики
 type IMetric interface {
+	// GetName - получить имя метрики
 	GetName() string
+	// GetType - получить тип метрики
 	GetType() MType
+	// ToString - получить значение в виде строки
 	ToString() string
 	MarshalJSON() ([]byte, error)
+	// SetValue - установить значение
 	SetValue(value string) error
+	// SetHash - создает хеш в структуру метрики используя ключ
 	SetHash(key string) error
 }
 
+// NewByString - конструктор создает метрику из строки
 func NewByString(name string, value string, metricType MType) (IMetric, error) {
 	switch metricType {
 	case GAUGE:

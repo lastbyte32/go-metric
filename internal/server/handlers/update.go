@@ -12,6 +12,7 @@ import (
 	"github.com/lastbyte32/go-metric/internal/utils"
 )
 
+// UpdatesMetricFromJSON - обновляет сразу несколько метрику из JSON
 func (h *handler) UpdatesMetricFromJSON(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var metrics []metric.Metrics
@@ -45,6 +46,7 @@ func (h *handler) UpdatesMetricFromJSON(w http.ResponseWriter, r *http.Request) 
 	w.Write(body)
 }
 
+// UpdateMetricFromJSON - обновляет одну метрику из JSON
 func (h *handler) UpdateMetricFromJSON(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -78,15 +80,14 @@ func (h *handler) UpdateMetricFromJSON(w http.ResponseWriter, r *http.Request) {
 	case metric.GAUGE:
 		value = utils.FloatToString(*m.Value)
 	}
-
 	if err := h.metricsStorage.Update(m.ID, value, mtype); err != nil {
 		http.Error(w, fmt.Sprintf("err: %s", err.Error()), http.StatusBadRequest)
 		return
 	}
 	w.Write([]byte("{}"))
-
 }
 
+// UpdateMetric - обновляет одну метрику
 func (h *handler) UpdateMetric(w http.ResponseWriter, r *http.Request) {
 	metricType := metric.MType(chi.URLParam(r, "type"))
 	metricName := chi.URLParam(r, "name")

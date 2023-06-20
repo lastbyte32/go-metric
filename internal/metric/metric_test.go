@@ -74,3 +74,48 @@ func TestNewByString(t *testing.T) {
 		})
 	}
 }
+
+func TestCounterGetValueAsString(t *testing.T) {
+	m := Metrics{
+		MType: string(COUNTER),
+		Delta: new(int64),
+	}
+	*m.Delta = 10
+	expectedCounter := "10"
+	assert.Equal(t, expectedCounter, m.GetValueAsString())
+}
+func TestGaugeGetValueAsString(t *testing.T) {
+	m := Metrics{
+		MType: string(GAUGE),
+		Value: new(float64),
+	}
+	value := 25.5
+	expectedGauge := "25.5"
+	m.Value = &value
+	assert.Equal(t, expectedGauge, m.GetValueAsString())
+}
+
+func TestGetStringToSign(t *testing.T) {
+	m := Metrics{
+		ID:    "metric1",
+		MType: "counter",
+		Delta: new(int64),
+		Value: nil,
+	}
+
+	*m.Delta = 10
+
+	expectedCounter := "metric1:counter:10"
+	assert.Equal(t, expectedCounter, m.GetStringToSign())
+
+	m.MType = "gauge"
+	value := 25.5
+	m.Value = &value
+
+	expectedGauge := "metric1:gauge:25.500000"
+	assert.Equal(t, expectedGauge, m.GetStringToSign())
+
+	m.MType = "err_type"
+	expectedDefault := ""
+	assert.Equal(t, expectedDefault, m.GetStringToSign())
+}

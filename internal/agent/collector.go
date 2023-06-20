@@ -14,7 +14,7 @@ func getRunTimeStat() map[string]float64 {
 	runtime.ReadMemStats(&memStats)
 
 	return map[string]float64{
-		"RandomValue":   rand.Float64(),
+		"RandomValue":   rand.Float64(), //nolint:gosec
 		"Alloc":         float64(memStats.Alloc),
 		"BuckHashSys":   float64(memStats.BuckHashSys),
 		"Frees":         float64(memStats.Frees),
