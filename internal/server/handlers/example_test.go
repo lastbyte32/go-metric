@@ -1,4 +1,4 @@
-package handlers_test
+package handlers
 
 import (
 	"bytes"
@@ -14,7 +14,7 @@ type Metrics struct {
 	Value float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
 }
 
-func ExampleGetMetricFromJSON() {
+func ExampleHandler_GetMetricFromJSON() {
 	metric := Metrics{
 		ID:    "test_counter",
 		MType: "counter",
@@ -25,10 +25,13 @@ func ExampleGetMetricFromJSON() {
 		log.Fatalf("error on marshal: %v", err)
 	}
 	req, err := http.Post("http://example.com/value/", "application/json", bytes.NewBuffer(bodyJSON))
-	defer req.Body.Close()
-
 	if err != nil {
 		log.Fatalf("error in get metric: %v", err)
+	}
+
+	err = req.Body.Close()
+	if err != nil {
+		log.Fatalf("error on close: %v", err)
 	}
 	log.Printf("get metric from json successful")
 }
