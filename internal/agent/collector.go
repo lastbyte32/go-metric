@@ -14,7 +14,7 @@ func getRunTimeStat() map[string]float64 {
 	runtime.ReadMemStats(&memStats)
 
 	return map[string]float64{
-		"RandomValue":   rand.Float64(),
+		"RandomValue":   rand.Float64(), //nolint:gosec
 		"Alloc":         float64(memStats.Alloc),
 		"BuckHashSys":   float64(memStats.BuckHashSys),
 		"Frees":         float64(memStats.Frees),
@@ -50,11 +50,10 @@ func getMemory() map[string]float64 {
 	if err != nil {
 		return map[string]float64{}
 	}
-
-	return map[string]float64{
-		"TotalMemory": float64(vm.Total),
-		"FreeMemory":  float64(vm.Free),
-	}
+	metrics := make(map[string]float64, 2)
+	metrics["TotalMemory"] = float64(vm.Total)
+	metrics["FreeMemory"] = float64(vm.Free)
+	return metrics
 }
 
 func getCPU() map[string]float64 {

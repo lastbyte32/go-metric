@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/go-chi/chi"
@@ -11,6 +12,7 @@ import (
 	"github.com/lastbyte32/go-metric/internal/utils"
 )
 
+// UpdatesMetricFromJSON - обновляет сразу несколько метрику из JSON
 func (h *handler) UpdatesMetricFromJSON(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var metrics []metric.Metrics
@@ -34,9 +36,17 @@ func (h *handler) UpdatesMetricFromJSON(w http.ResponseWriter, r *http.Request) 
 			h.logger.Info(fmt.Sprintf("err: %s", err.Error()), http.StatusBadRequest)
 		}
 	}
-	w.Write([]byte("{}"))
+
+	body, err := json.Marshal(&metrics)
+	if err != nil {
+		log.Printf("Error in JSON marshal. Err: %s", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	w.Write(body)
 }
 
+// UpdateMetricFromJSON - обновляет одну метрику из JSON
 func (h *handler) UpdateMetricFromJSON(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -70,15 +80,14 @@ func (h *handler) UpdateMetricFromJSON(w http.ResponseWriter, r *http.Request) {
 	case metric.GAUGE:
 		value = utils.FloatToString(*m.Value)
 	}
-
 	if err := h.metricsStorage.Update(m.ID, value, mtype); err != nil {
 		http.Error(w, fmt.Sprintf("err: %s", err.Error()), http.StatusBadRequest)
 		return
 	}
 	w.Write([]byte("{}"))
-
 }
 
+// UpdateMetric - обновляет одну метрику
 func (h *handler) UpdateMetric(w http.ResponseWriter, r *http.Request) {
 	metricType := metric.MType(chi.URLParam(r, "type"))
 	metricName := chi.URLParam(r, "name")

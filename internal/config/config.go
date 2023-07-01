@@ -8,6 +8,7 @@ import (
 	"github.com/caarlos0/env/v7"
 )
 
+// Configurator TODO: перенести объявление интерфейса по месту использования
 type Configurator interface {
 	GetAddress() string
 	GetStoreInterval() time.Duration
@@ -36,30 +37,37 @@ type config struct {
 	DSN           string        `env:"DATABASE_DSN"`
 }
 
+// GetStoreFile - метод возвращает путь до файла хранения метрик
 func (c *config) GetStoreFile() string {
 	return c.StoreFile
 }
 
+// IsRestore - нужно ли востанавливать метрики из файла, true - да, по-умолчанию метрики не востанавливаем
 func (c *config) IsRestore() bool {
 	return c.Restore
 }
 
+// GetAddress - адрес биндинга http сервер
 func (c *config) GetAddress() string {
 	return c.Address
 }
 
+// GetStoreInterval - интервал сохранения метрик на в файл
 func (c *config) GetStoreInterval() time.Duration {
 	return c.StoreInterval
 }
 
+// GetKey - ключ для подписи входящих данных
 func (c *config) GetKey() string {
 	return c.Key
 }
 
+// GetDSN - параметры подключения к БД
 func (c *config) GetDSN() string {
 	return c.DSN
 }
 
+// IsToSign - нужно ли проверять подпись
 func (c *config) IsToSign() bool {
 	return c.Key != ""
 }
@@ -82,6 +90,7 @@ func (c *config) flags() {
 	flag.Parse()
 }
 
+// NewConfig - конструктор который инициализирует конфигурацию
 func NewConfig() (Configurator, error) {
 	c := &config{}
 	c.flags()

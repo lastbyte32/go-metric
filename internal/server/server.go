@@ -85,6 +85,7 @@ func (s *server) shutdown() {
 	s.logger.Info("shutdown completed")
 }
 
+// Run - Метод запускает http сервер и shutdown горутину
 func (s *server) Run(ctx context.Context) error {
 	go func() {
 		s.logger.Info("start shutdown watcher")

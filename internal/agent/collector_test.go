@@ -15,5 +15,4 @@ func TestGetMemStat(t *testing.T) {
 		_, ok := m[key]
 		assert.True(t, ok, "Expected key %q to exist in the returned map", key)
 	}
-
 }

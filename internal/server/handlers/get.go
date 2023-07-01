@@ -10,6 +10,7 @@ import (
 	"github.com/lastbyte32/go-metric/internal/metric"
 )
 
+// GetMetricFromJSON - отдает одну метрику запрощенную методом POST в виде JSON
 func (h *handler) GetMetricFromJSON(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -48,6 +49,7 @@ func (h *handler) GetMetricFromJSON(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonBody)
 }
 
+// GetMetric - отдает одну метрику запрощенную методом GET как текст
 func (h *handler) GetMetric(w http.ResponseWriter, r *http.Request) {
 	h.logger.Info("http GetMetric")
 	mType := metric.MType(chi.URLParam(r, "type"))
