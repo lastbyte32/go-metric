@@ -17,7 +17,7 @@ func responseIndex(w http.ResponseWriter, body string) {
 	w.Write([]byte(response.String()))
 }
 
-// Index - html страница с метриками
+// Index - html страница с метриками.
 func (h *handler) Index(w http.ResponseWriter, r *http.Request) {
 	var body strings.Builder
 	metrics := h.metricsStorage.All()

@@ -15,11 +15,11 @@ import (
 	"github.com/lastbyte32/go-metric/internal/storage"
 )
 
-// Request - "джоба" с которой работает метод transmit
+// Request - "джоба" с которой работает метод transmit.
 type Request struct {
-	// Body - тело запроса
+	// Body - тело запроса.
 	Body string
-	// URL для отправки
+	// URL для отправки.
 	URL string
 }
 
@@ -31,7 +31,7 @@ type agent struct {
 	reqCh  chan *Request
 }
 
-// NewAgent - Конструктор подготавливает основные структуры для работы агента
+// NewAgent - Конструктор подготавливает основные структуры для работы агента.
 func NewAgent(config IConfigurator) *agent {
 	l, err := zap.NewDevelopment()
 	if err != nil {
@@ -83,12 +83,6 @@ func (a *agent) transmit(job *Request) {
 		fmt.Println("transmitWorker err: ", err)
 		return
 	}
-}
-
-func (a *agent) makePlainTextRequest(m metric.IMetric) error {
-	url := fmt.Sprintf("http://%s/update/%s/%s/%s", a.config.getAddress(), m.GetType(), m.GetName(), m.ToString())
-	a.addRequest(url, "")
-	return nil
 }
 
 func (a *agent) makeJSONRequest(m metric.IMetric) error {
@@ -165,9 +159,9 @@ func (a *agent) statWorker(ctx context.Context, getStat func() map[string]float6
 }
 
 // Run - Основной метод агента.
-// Запускает по горутине на каждую группу получаемых метрик
-// Также запускает N горутин которые читают "джоб"ы из канала и отправляют метрики на сервер
-// По таймеру "джоб"ы скаладываются в канал
+// Запускает по горутине на каждую группу получаемых метрик.
+// Также запускает N горутин которые читают "джоб"ы из канала и отправляют метрики на сервер.
+// По таймеру "джоб"ы скаладываются в канал.
 func (a *agent) Run(ctx context.Context) {
 	a.logger.Info("Agent start")
 	reportTimer := time.NewTicker(a.config.getReportInterval())

@@ -23,7 +23,6 @@ type Metrics struct {
 }
 
 func (m *Metrics) GetValueAsString() string {
-	// Или этот метод нужен только в рамках файлового хранилища и его нужно имплементировать там?
 	switch MType(m.MType) {
 	case COUNTER:
 		return fmt.Sprintf("%d", *m.Delta)
@@ -56,22 +55,22 @@ func (m *Metrics) VerifyHash(key string) (bool, error) {
 	return true, nil
 }
 
-// IMetric - интерфейс метрики
+// IMetric - интерфейс метрики.
 type IMetric interface {
-	// GetName - получить имя метрики
+	// GetName - получить имя метрики.
 	GetName() string
-	// GetType - получить тип метрики
+	// GetType - получить тип метрики.
 	GetType() MType
-	// ToString - получить значение в виде строки
+	// ToString - получить значение в виде строки.
 	ToString() string
 	MarshalJSON() ([]byte, error)
-	// SetValue - установить значение
+	// SetValue - установить значение.
 	SetValue(value string) error
-	// SetHash - создает хеш в структуру метрики используя ключ
+	// SetHash - создает хеш в структуру метрики используя ключ.
 	SetHash(key string) error
 }
 
-// NewByString - конструктор создает метрику из строки
+// NewByString - конструктор создает метрику из строки.
 func NewByString(name string, value string, metricType MType) (IMetric, error) {
 	switch metricType {
 	case GAUGE:
