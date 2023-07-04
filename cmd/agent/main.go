@@ -12,7 +12,12 @@ import (
 	"github.com/lastbyte32/go-metric/pkg/utils/profile"
 )
 
+var buildVersion = "N/A"
+var buildDate = "N/A"
+var buildCommit = "N/A"
+
 func main() {
+	printBuildInfo()
 	profile.ProfileIfEnabled()
 	config, err := agent.NewConfig()
 	if err != nil {
@@ -29,4 +34,12 @@ func main() {
 	defer ctxCancel()
 	app := agent.NewAgent(config)
 	app.Run(ctx)
+}
+
+func printBuildInfo() {
+	log.Printf("Build version: %s\nBuild date: %s\nBuild commit: %s\n",
+		buildVersion,
+		buildDate,
+		buildDate,
+	)
 }
