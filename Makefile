@@ -9,6 +9,9 @@ BUILD_COMMIT = $$(git rev-parse HEAD)
 trace_fn = go tool pprof -http=\":9090\" -seconds=120 http://localhost:$(1)/debug/pprof/$(2)
 trace_and_save_fn = curl -sK -v http://localhost:$(1)/debug/pprof/$(2)?seconds=300 > profiles/$(3) && go tool pprof -http=":9090" profiles/$(3)
 
+keygen:
+	go run cmd/keygen/main.go
+
 coverage:
 	go test -coverprofile=coverage.out ./... && go tool cover -func=coverage.out
 

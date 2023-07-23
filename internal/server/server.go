@@ -23,7 +23,7 @@ type server struct {
 	logger *zap.SugaredLogger
 }
 
-func NewServer(config config.Configurator) *server {
+func NewServer(config config.Configurator) (*server, error) {
 
 	l, err := zap.NewDevelopment()
 	if err != nil {
@@ -34,7 +34,10 @@ func NewServer(config config.Configurator) *server {
 
 	store := storage.New(config, logger)
 
-	handler := handlers.NewHandler(store, logger, config)
+	handler, err := handlers.NewHandler(store, logger, config)
+	if err != nil {
+		return nil, err
+	}
 	router := chi.NewRouter()
 	router.Use(
 		customMiddleware.Compressor,
@@ -71,7 +74,7 @@ func NewServer(config config.Configurator) *server {
 		http:   httpServer,
 		logger: logger,
 		store:  store,
-	}
+	}, nil
 }
 
 func (s *server) shutdown() {

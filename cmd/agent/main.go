@@ -32,7 +32,10 @@ func main() {
 	)
 
 	defer ctxCancel()
-	app := agent.NewAgent(config)
+	app, err := agent.NewAgent(config)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 	app.Run(ctx)
 }
 

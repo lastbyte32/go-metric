@@ -17,6 +17,7 @@ type Configurator interface {
 	GetKey() string
 	IsToSign() bool
 	GetDSN() string
+	GetCryptoKeyPath() string
 }
 
 const (
@@ -25,7 +26,8 @@ const (
 	storeFileDefault     = "/tmp/devops-metrics-db.json"
 	restoreDefault       = false
 	keyDefault           = ""
-	DatabaseDSNDefault   = ""
+	databaseDSNDefault   = ""
+	cryptoKeyPathDefault = ""
 )
 
 type config struct {
@@ -35,6 +37,12 @@ type config struct {
 	Restore       bool          `env:"RESTORE"`
 	Key           string        `env:"KEY"`
 	DSN           string        `env:"DATABASE_DSN"`
+	CryptoKeyPath string        `env:"CRYPTO_KEY"`
+}
+
+// GetCryptoKeyPath - метод возвращает путь до файла с публичным ключом.
+func (c *config) GetCryptoKeyPath() string {
+	return c.CryptoKeyPath
 }
 
 // GetStoreFile - метод возвращает путь до файла хранения метрик.
@@ -85,12 +93,12 @@ func (c *config) flags() {
 	flag.BoolVar(&c.Restore, "r", restoreDefault, "restoreDefault metrics")
 	flag.DurationVar(&c.StoreInterval, "i", storeIntervalDefault, "store metrics on interval")
 	flag.StringVar(&c.Key, "k", keyDefault, "key for encrypt")
-	flag.StringVar(&c.DSN, "d", DatabaseDSNDefault, "dsn")
-
+	flag.StringVar(&c.DSN, "d", databaseDSNDefault, "dsn")
+	flag.StringVar(&c.CryptoKeyPath, "crypto-key", cryptoKeyPathDefault, "path to private key")
 	flag.Parse()
 }
 
-// NewConfig - конструктор который инициализирует конфигурацию.
+// NewConfig - конструктор, который инициализирует конфигурацию.
 func NewConfig() (Configurator, error) {
 	c := &config{}
 	c.flags()

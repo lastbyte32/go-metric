@@ -16,6 +16,7 @@ type IConfigurator interface {
 	getKey() string
 	isToSign() bool
 	getRateLimit() int
+	GetCryptoKeyPath() string
 }
 
 const (
@@ -25,6 +26,7 @@ const (
 	reportTimeoutDefault  = 20 * time.Second
 	keyDefault            = ""
 	RateLimitDefault      = 10
+	cryptoKeyPathDefault  = ""
 )
 
 type config struct {
@@ -34,6 +36,12 @@ type config struct {
 	PollInterval   time.Duration `env:"POLL_INTERVAL"`
 	Key            string        `env:"KEY"`
 	RateLimit      int           `env:"RATE_LIMIT"`
+	CryptoKeyPath  string        `env:"CRYPTO_KEY"`
+}
+
+// GetCryptoKeyPath - метод возвращает путь до файла с публичным ключом.
+func (c *config) GetCryptoKeyPath() string {
+	return c.CryptoKeyPath
 }
 
 func (c *config) getRateLimit() int {
@@ -78,6 +86,7 @@ func (c *config) flags() {
 	flag.DurationVar(&c.ReportTimeout, "t", reportTimeoutDefault, "report timeout")
 	flag.StringVar(&c.Key, "k", keyDefault, "key for encrypt")
 	flag.IntVar(&c.RateLimit, "l", RateLimitDefault, "RateLimit")
+	flag.StringVar(&c.CryptoKeyPath, "crypto-key", cryptoKeyPathDefault, "path to public key")
 	flag.Parse()
 }
 
