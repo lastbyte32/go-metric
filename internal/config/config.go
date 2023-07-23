@@ -1,8 +1,10 @@
 package config
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/caarlos0/env/v7"
@@ -28,16 +30,18 @@ const (
 	keyDefault           = ""
 	databaseDSNDefault   = ""
 	cryptoKeyPathDefault = ""
+	configPathDefault    = ""
 )
 
 type config struct {
-	Address       string        `env:"ADDRESS"`
-	StoreInterval time.Duration `env:"STORE_INTERVAL"`
-	StoreFile     string        `env:"STORE_FILE"`
-	Restore       bool          `env:"RESTORE"`
+	Address       string        `env:"ADDRESS" json:"address"`
+	StoreInterval time.Duration `env:"STORE_INTERVAL" json:"store_interval"`
+	StoreFile     string        `env:"STORE_FILE" json:"store_file"`
+	Restore       bool          `env:"RESTORE" json:"restore"`
 	Key           string        `env:"KEY"`
-	DSN           string        `env:"DATABASE_DSN"`
-	CryptoKeyPath string        `env:"CRYPTO_KEY"`
+	DSN           string        `env:"DATABASE_DSN" json:"database_dsn"`
+	CryptoKeyPath string        `env:"CRYPTO_KEY" json:"crypto_key"`
+	ConfigPath    string        `env:"CONFIG"`
 }
 
 // GetCryptoKeyPath - метод возвращает путь до файла с публичным ключом.
@@ -95,6 +99,7 @@ func (c *config) flags() {
 	flag.StringVar(&c.Key, "k", keyDefault, "key for encrypt")
 	flag.StringVar(&c.DSN, "d", databaseDSNDefault, "dsn")
 	flag.StringVar(&c.CryptoKeyPath, "crypto-key", cryptoKeyPathDefault, "path to private key")
+	flag.StringVar(&c.ConfigPath, "c", configPathDefault, "path to json config file")
 	flag.Parse()
 }
 
@@ -102,9 +107,20 @@ func (c *config) flags() {
 func NewConfig() (Configurator, error) {
 	c := &config{}
 	c.flags()
-	err := c.env()
-	if err != nil {
+	if err := c.env(); err != nil {
 		return nil, err
+	}
+
+	if c.ConfigPath != "" {
+		file, err := os.ReadFile(c.ConfigPath)
+		if err != nil {
+			return nil, err
+		}
+		var jsonCfg config
+		if err := json.Unmarshal(file, &jsonCfg); err != nil {
+			return nil, err
+		}
+		c = &jsonCfg
 	}
 	fmt.Printf("*Server configuration used*\n\t- Address: %s\n\t- StoreInterval: %.0fs\n\t-StoreFile: %s\n\t-Restore: %v\n",
 		c.Address,
