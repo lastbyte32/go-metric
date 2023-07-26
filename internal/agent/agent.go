@@ -13,6 +13,7 @@ import (
 
 	"github.com/lastbyte32/go-metric/internal/metric"
 	"github.com/lastbyte32/go-metric/internal/storage"
+	"github.com/lastbyte32/go-metric/internal/utils"
 	"github.com/lastbyte32/go-metric/pkg/utils/crypto"
 )
 
@@ -49,8 +50,14 @@ func NewAgent(config IConfigurator) (*agent, error) {
 	logger := l.Sugar()
 	defer logger.Sync()
 
+	ipAddr, err := utils.GetFirstHostIPv4Addr()
+	if err != nil {
+		return nil, err
+	}
 	client := resty.New().
-		SetTimeout(config.getReportTimeout())
+		SetTimeout(config.getReportTimeout()).
+		SetHeader("X-Real-IP", ipAddr.String())
+
 	memory := storage.NewMemoryStorage(logger)
 	a := &agent{
 		client:    client,

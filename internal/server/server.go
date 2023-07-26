@@ -45,6 +45,10 @@ func NewServer(config config.Configurator) (*server, error) {
 		//	middleware.Recoverer,
 	)
 
+	if trustedSubnet := config.GetTrustedSubnet(); trustedSubnet != "" {
+		router.Use(customMiddleware.SubNetFilter(trustedSubnet))
+	}
+
 	router.Group(func(r chi.Router) {
 		r.Get("/", handler.Index)
 		r.Get("/value/{type}/{name}", handler.GetMetric)
