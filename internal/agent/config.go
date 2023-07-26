@@ -1,8 +1,10 @@
 package agent
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/caarlos0/env/v7"
@@ -16,6 +18,7 @@ type IConfigurator interface {
 	getKey() string
 	isToSign() bool
 	getRateLimit() int
+	GetCryptoKeyPath() string
 }
 
 const (
@@ -25,15 +28,24 @@ const (
 	reportTimeoutDefault  = 20 * time.Second
 	keyDefault            = ""
 	RateLimitDefault      = 10
+	cryptoKeyPathDefault  = ""
+	configPathDefault     = ""
 )
 
 type config struct {
-	Address        string        `env:"ADDRESS"`
-	ReportInterval time.Duration `env:"REPORT_INTERVAL"`
-	ReportTimeout  time.Duration `env:"REPORT_TIMEOUT" envDefault:"20s"`
-	PollInterval   time.Duration `env:"POLL_INTERVAL"`
-	Key            string        `env:"KEY"`
-	RateLimit      int           `env:"RATE_LIMIT"`
+	Address        string        `env:"ADDRESS" json:"address"`
+	ReportInterval time.Duration `env:"REPORT_INTERVAL" json:"report_interval"`
+	ReportTimeout  time.Duration `env:"REPORT_TIMEOUT" envDefault:"20s" json:"report_timeout,omitempty"`
+	PollInterval   time.Duration `env:"POLL_INTERVAL" json:"poll_interval"`
+	Key            string        `env:"KEY" json:"key"`
+	RateLimit      int           `env:"RATE_LIMIT" json:"rate_limit,omitempty"`
+	CryptoKeyPath  string        `env:"CRYPTO_KEY" json:"crypto_key"`
+	ConfigPath     string        `env:"CONFIG"`
+}
+
+// GetCryptoKeyPath - метод возвращает путь до файла с публичным ключом.
+func (c *config) GetCryptoKeyPath() string {
+	return c.CryptoKeyPath
 }
 
 func (c *config) getRateLimit() int {
@@ -78,16 +90,30 @@ func (c *config) flags() {
 	flag.DurationVar(&c.ReportTimeout, "t", reportTimeoutDefault, "report timeout")
 	flag.StringVar(&c.Key, "k", keyDefault, "key for encrypt")
 	flag.IntVar(&c.RateLimit, "l", RateLimitDefault, "RateLimit")
+	flag.StringVar(&c.CryptoKeyPath, "crypto-key", cryptoKeyPathDefault, "path to public key")
+	flag.StringVar(&c.ConfigPath, "c", configPathDefault, "path to json config file")
 	flag.Parse()
 }
 
 func NewConfig() (IConfigurator, error) {
 	c := &config{}
 	c.flags()
-	err := c.env()
-	if err != nil {
+	if err := c.env(); err != nil {
 		return nil, err
 	}
+
+	if c.ConfigPath != "" {
+		file, err := os.ReadFile(c.ConfigPath)
+		if err != nil {
+			return nil, err
+		}
+		var jsonCfg config
+		if err := json.Unmarshal(file, &jsonCfg); err != nil {
+			return nil, err
+		}
+		c = &jsonCfg
+	}
+
 	fmt.Printf("*Configuration used*\n\t- Server: %s\n\t- ReportInterval: %.0fs\n\t- PollInterval: %.0fs\n",
 		c.Address,
 		c.ReportInterval.Seconds(),

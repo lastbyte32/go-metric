@@ -13,29 +13,38 @@ import (
 
 	"github.com/lastbyte32/go-metric/internal/metric"
 	"github.com/lastbyte32/go-metric/internal/storage"
+	"github.com/lastbyte32/go-metric/pkg/utils/crypto"
 )
 
-// Request - "джоба" с которой работает метод transmit
+// Понимаю что использования интерфейса тут не нужно
+// Но если бы "энкриптер" передавался "снаружи" то избавились бы от зависимости
+type encrypter interface {
+	Encrypt([]byte) ([]byte, error)
+}
+
+// Request - "джоба" с которой работает метод transmit.
 type Request struct {
-	// Body - тело запроса
+	// Body - тело запроса.
 	Body string
-	// URL для отправки
+	// URL для отправки.
 	URL string
 }
 
 type agent struct {
-	ms     storage.IStorage
-	client *resty.Client
-	config IConfigurator
-	logger *zap.SugaredLogger
-	reqCh  chan *Request
+	ms        storage.IStorage
+	client    *resty.Client
+	config    IConfigurator
+	logger    *zap.SugaredLogger
+	reqCh     chan *Request
+	isEncrypt bool
+	encryptor encrypter
 }
 
-// NewAgent - Конструктор подготавливает основные структуры для работы агента
-func NewAgent(config IConfigurator) *agent {
+// NewAgent - Конструктор подготавливает основные структуры для работы агента.
+func NewAgent(config IConfigurator) (*agent, error) {
 	l, err := zap.NewDevelopment()
 	if err != nil {
-		log.Fatalf("error on create logger: %v", err)
+		return nil, fmt.Errorf("error on create logger: %v", err)
 	}
 	logger := l.Sugar()
 	defer logger.Sync()
@@ -43,16 +52,29 @@ func NewAgent(config IConfigurator) *agent {
 	client := resty.New().
 		SetTimeout(config.getReportTimeout())
 	memory := storage.NewMemoryStorage(logger)
-	return &agent{
-		client: client,
-		config: config,
-		ms:     memory,
-		logger: logger,
-		reqCh:  make(chan *Request),
+	a := &agent{
+		client:    client,
+		config:    config,
+		ms:        memory,
+		logger:    logger,
+		reqCh:     make(chan *Request),
+		isEncrypt: false,
 	}
+
+	keyPath := config.GetCryptoKeyPath()
+	if keyPath != "" {
+		encrypter, err := crypto.NewEncryptor(keyPath)
+		if err != nil {
+			return nil, fmt.Errorf("error on create encryptor: %v", err)
+		}
+		a.encryptor = encrypter
+		a.isEncrypt = true
+	}
+	return a, nil
 }
 
 func (a *agent) addRequest(url, body string) {
+	a.logger.Info("body", zap.String("body", body))
 	a.reqCh <- &Request{
 		Body: body,
 		URL:  url,
@@ -85,12 +107,6 @@ func (a *agent) transmit(job *Request) {
 	}
 }
 
-func (a *agent) makePlainTextRequest(m metric.IMetric) error {
-	url := fmt.Sprintf("http://%s/update/%s/%s/%s", a.config.getAddress(), m.GetType(), m.GetName(), m.ToString())
-	a.addRequest(url, "")
-	return nil
-}
-
 func (a *agent) makeJSONRequest(m metric.IMetric) error {
 	url := fmt.Sprintf("http://%s/update/", a.config.getAddress())
 
@@ -105,6 +121,12 @@ func (a *agent) makeJSONRequest(m metric.IMetric) error {
 	if err != nil {
 		log.Printf("Error in JSON marshal. Err: %s", err)
 		return err
+	}
+	if a.isEncrypt {
+		body, err = a.encryptor.Encrypt(body)
+		if err != nil {
+			return err
+		}
 	}
 	a.addRequest(url, string(body))
 	return nil
@@ -165,9 +187,9 @@ func (a *agent) statWorker(ctx context.Context, getStat func() map[string]float6
 }
 
 // Run - Основной метод агента.
-// Запускает по горутине на каждую группу получаемых метрик
-// Также запускает N горутин которые читают "джоб"ы из канала и отправляют метрики на сервер
-// По таймеру "джоб"ы скаладываются в канал
+// Запускает по горутине на каждую группу получаемых метрик.
+// Также запускает N горутин которые читают "джоб"ы из канала и отправляют метрики на сервер.
+// По таймеру "джоб"ы складываются в канал.
 func (a *agent) Run(ctx context.Context) {
 	a.logger.Info("Agent start")
 	reportTimer := time.NewTicker(a.config.getReportInterval())

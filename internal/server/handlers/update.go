@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 
@@ -12,15 +13,30 @@ import (
 	"github.com/lastbyte32/go-metric/internal/utils"
 )
 
-// UpdatesMetricFromJSON - обновляет сразу несколько метрику из JSON
+// UpdatesMetricFromJSON - обновляет сразу несколько метрику из JSON.
 func (h *handler) UpdatesMetricFromJSON(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	bodyBytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if h.isDecrypt {
+		encryptedBody, err := h.decrypter.Decrypt(bodyBytes)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		bodyBytes = encryptedBody
+	}
+
 	var metrics []metric.Metrics
-	if err := json.NewDecoder(r.Body).Decode(&metrics); err != nil {
+	if err := json.Unmarshal(bodyBytes, &metrics); err != nil {
 		h.logger.Infof("Batch json decode: %s", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
 	for _, m := range metrics {
 		h.logger.Info(m.ID)
 		var value = ""
@@ -49,9 +65,23 @@ func (h *handler) UpdatesMetricFromJSON(w http.ResponseWriter, r *http.Request) 
 // UpdateMetricFromJSON - обновляет одну метрику из JSON
 func (h *handler) UpdateMetricFromJSON(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	bodyBytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if h.isDecrypt {
+		encryptedBody, err := h.decrypter.Decrypt(bodyBytes)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		bodyBytes = encryptedBody
+	}
 
 	var m metric.Metrics
-	if err := json.NewDecoder(r.Body).Decode(&m); err != nil {
+	if err := json.Unmarshal(bodyBytes, &m); err != nil {
+		h.logger.Infof("Batch json decode: %s", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -87,7 +117,7 @@ func (h *handler) UpdateMetricFromJSON(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("{}"))
 }
 
-// UpdateMetric - обновляет одну метрику
+// UpdateMetric - обновляет одну метрику.
 func (h *handler) UpdateMetric(w http.ResponseWriter, r *http.Request) {
 	metricType := metric.MType(chi.URLParam(r, "type"))
 	metricName := chi.URLParam(r, "name")

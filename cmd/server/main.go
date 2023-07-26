@@ -25,6 +25,9 @@ func main() {
 	)
 	defer ctxCancel()
 
-	app := server.NewServer(cfg)
+	app, err := server.NewServer(cfg)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 	log.Fatal(app.Run(ctx))
 }

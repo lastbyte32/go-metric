@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"sync"
 	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib" //
@@ -36,7 +35,6 @@ type sqlStorage struct {
 	db         *sqlx.DB
 	logger     *zap.SugaredLogger
 	pathToFile string
-	fileMutex  sync.RWMutex
 }
 
 type rowMetric struct {
@@ -155,7 +153,6 @@ func (store *sqlStorage) Close() error {
 func NewSQLStorage(l *zap.SugaredLogger, config config.Configurator) IStorage {
 	db, err := connect(config.GetDSN())
 	if err != nil {
-		//return nil, err
 		l.Error(err)
 	}
 	store := &sqlStorage{
