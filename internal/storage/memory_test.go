@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
+	mproto "github.com/lastbyte32/go-metric/api/proto"
 	"github.com/lastbyte32/go-metric/internal/metric"
 )
 
@@ -14,6 +15,11 @@ type mockMetric struct {
 	name      string
 	valueType metric.MType
 	value     string
+}
+
+func (m *mockMetric) MarshalProtobuf() *mproto.Metric {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (m *mockMetric) MarshalJSON() ([]byte, error) {
