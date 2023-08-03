@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	mproto "github.com/lastbyte32/go-metric/api/proto"
 	"github.com/lastbyte32/go-metric/internal/utils"
 )
 
@@ -64,6 +65,7 @@ type IMetric interface {
 	// ToString - получить значение в виде строки.
 	ToString() string
 	MarshalJSON() ([]byte, error)
+	MarshalProtobuf() *mproto.Metric
 	// SetValue - установить значение.
 	SetValue(value string) error
 	// SetHash - создает хеш в структуру метрики используя ключ.
