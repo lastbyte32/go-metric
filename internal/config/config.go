@@ -20,6 +20,7 @@ type Configurator interface {
 	IsToSign() bool
 	GetDSN() string
 	GetCryptoKeyPath() string
+	GetTrustedSubnet() string
 }
 
 const (
@@ -31,6 +32,7 @@ const (
 	databaseDSNDefault   = ""
 	cryptoKeyPathDefault = ""
 	configPathDefault    = ""
+	trustedSubnetDefault = ""
 )
 
 type config struct {
@@ -42,6 +44,12 @@ type config struct {
 	DSN           string        `env:"DATABASE_DSN" json:"database_dsn"`
 	CryptoKeyPath string        `env:"CRYPTO_KEY" json:"crypto_key"`
 	ConfigPath    string        `env:"CONFIG"`
+	TrustedSubnet string        `env:"TRUSTED_SUBNET" json:"trusted_subnet"`
+}
+
+// GetTrustedSubnet - метод возвращает доверенную подсеть.
+func (c *config) GetTrustedSubnet() string {
+	return c.TrustedSubnet
 }
 
 // GetCryptoKeyPath - метод возвращает путь до файла с публичным ключом.
@@ -54,7 +62,7 @@ func (c *config) GetStoreFile() string {
 	return c.StoreFile
 }
 
-// IsRestore - нужно ли востанавливать метрики из файла, true - да, по-умолчанию метрики не востанавливаем.
+// IsRestore - нужно ли восстанавливать метрики из файла, true - да, по-умолчанию метрики не восстанавливаем.
 func (c *config) IsRestore() bool {
 	return c.Restore
 }
@@ -100,6 +108,7 @@ func (c *config) flags() {
 	flag.StringVar(&c.DSN, "d", databaseDSNDefault, "dsn")
 	flag.StringVar(&c.CryptoKeyPath, "crypto-key", cryptoKeyPathDefault, "path to private key")
 	flag.StringVar(&c.ConfigPath, "c", configPathDefault, "path to json config file")
+	flag.StringVar(&c.ConfigPath, "t", trustedSubnetDefault, "allowed subnet")
 	flag.Parse()
 }
 
