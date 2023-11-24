@@ -4,13 +4,18 @@ package agent
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"time"
 
 	"github.com/go-resty/resty/v2"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 
+	"github.com/lastbyte32/go-metric/api/proto"
 	"github.com/lastbyte32/go-metric/internal/metric"
 	"github.com/lastbyte32/go-metric/internal/storage"
 	"github.com/lastbyte32/go-metric/internal/utils"
@@ -37,6 +42,7 @@ type agent struct {
 	config    IConfigurator
 	logger    *zap.SugaredLogger
 	reqCh     chan *Request
+	grpcCh    chan metric.IMetric
 	isEncrypt bool
 	encryptor encrypter
 }
@@ -88,16 +94,60 @@ func (a *agent) addRequest(url, body string) {
 	}
 }
 
-func (a *agent) transmitWorker(ctx context.Context, num int) {
-	a.logger.Info("start transmitWorker #", num)
+func (a *agent) transmitRESTWorker(ctx context.Context, num int) {
+	a.logger.Info("start transmitRESTWorker #", num)
 	for {
 		select {
 		case <-ctx.Done():
-			a.logger.Info("stop transmitWorker #", num)
+			a.logger.Info("stop transmitRESTWorker #", num)
 			return
 		default:
 			for job := range a.reqCh {
 				a.transmit(job)
+			}
+		}
+	}
+}
+
+// getGRPCCredentials - отдает credentials.
+func (a *agent) getGRPCCredentials() (credentials.TransportCredentials, error) {
+	if a.isEncrypt {
+		keyPath := a.config.GetCryptoKeyPath()
+		return credentials.NewClientTLSFromFile(keyPath, "")
+	}
+	return insecure.NewCredentials(), nil
+}
+
+func (a *agent) transmitGRPCWorker(ctx context.Context, num int) {
+	cred, err := a.getGRPCCredentials()
+	if err != nil {
+		a.logger.Errorf("create cred for grpc %v", err)
+	}
+
+	conn, err := grpc.Dial(":3200", grpc.WithTransportCredentials(cred))
+	if err != nil {
+		a.logger.Error("create grpc conn", zap.Error(err))
+	}
+	defer conn.Close()
+	client := proto.NewMetricsClient(conn)
+	stream, err := client.Update(ctx)
+	if err != nil {
+		a.logger.Error(err)
+	}
+
+	a.logger.Info("start transmitGRPCWorker #", num)
+	for {
+		select {
+		case <-ctx.Done():
+			a.logger.Info("stop transmitGRPCWorker #", num)
+			stream.CloseAndRecv()
+			return
+		default:
+			for m := range a.grpcCh {
+				err := stream.Send(m.MarshalProtobuf())
+				if err != nil {
+					a.logger.Errorf("transmitGRPCWorker err: %v", err)
+				}
 			}
 		}
 	}
@@ -109,9 +159,18 @@ func (a *agent) transmit(job *Request) {
 		SetBody(job.Body).
 		Post(job.URL)
 	if err != nil {
-		fmt.Println("transmitWorker err: ", err)
+		fmt.Println("transmitRESTWorker err: ", err)
 		return
 	}
+}
+
+func (a *agent) makeGRPCRequest(m metric.IMetric) error {
+	select {
+	case a.grpcCh <- m:
+	default:
+		return errors.New("grpcCh is close")
+	}
+	return nil
 }
 
 func (a *agent) makeJSONRequest(m metric.IMetric) error {
@@ -208,7 +267,8 @@ func (a *agent) Run(ctx context.Context) {
 
 	for i := 0; i < a.config.getRateLimit(); i++ {
 		workerNum := i
-		go a.transmitWorker(ctx, workerNum)
+		go a.transmitRESTWorker(ctx, workerNum)
+		go a.transmitGRPCWorker(ctx, workerNum)
 	}
 
 	for {

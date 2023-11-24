@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package metrics;
+import "google/protobuf/empty.proto";
+option go_package = "github.com/lastbyte32/go-metric/internal/metric/proto";
+
+enum Types {
+  UNKNOWN = 0;
+  COUNTER = 1;
+  GAUGE = 2;
+}
+
+message CounterMetric {
+  string id = 1;
+  int64 delta = 2;
+}
+
+message GaugeMetric {
+  string id = 1;
+  double value = 2;
+}
+
+message Metric {
+  Types type = 1;
+  oneof metric {
+    CounterMetric counter = 2;
+    GaugeMetric gauge = 3;
+  }
+}
+
+
+service Metrics {
+  rpc Update(stream Metric) returns (google.protobuf.Empty);
+}

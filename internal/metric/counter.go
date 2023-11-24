@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	mproto "github.com/lastbyte32/go-metric/api/proto"
 	"github.com/lastbyte32/go-metric/internal/utils"
 )
 
@@ -58,6 +59,18 @@ func (c *counter) MarshalJSON() ([]byte, error) {
 		Delta: &c.value,
 		Hash:  c.hash,
 	})
+}
+
+func (c *counter) MarshalProtobuf() *mproto.Metric {
+	return &mproto.Metric{
+		Type: mproto.Types_COUNTER,
+		Metric: &mproto.Metric_Counter{
+			Counter: &mproto.CounterMetric{
+				Id:    c.name,
+				Delta: c.value,
+			},
+		},
+	}
 }
 
 // NewCounter - создать метрику счетчик из имени и значения.

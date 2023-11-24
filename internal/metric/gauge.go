@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	mproto "github.com/lastbyte32/go-metric/api/proto"
 	"github.com/lastbyte32/go-metric/internal/utils"
 )
 
@@ -52,6 +53,18 @@ func (g *gauge) MarshalJSON() ([]byte, error) {
 		Value: &g.value,
 		Hash:  g.hash,
 	})
+}
+
+func (g *gauge) MarshalProtobuf() *mproto.Metric {
+	return &mproto.Metric{
+		Type: mproto.Types_GAUGE,
+		Metric: &mproto.Metric_Gauge{
+			Gauge: &mproto.GaugeMetric{
+				Id:    g.name,
+				Value: g.value,
+			},
+		},
+	}
 }
 
 func NewGauge(name string, value float64) IMetric {
