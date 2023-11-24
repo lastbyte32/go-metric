@@ -4,18 +4,7 @@
 
 [![codecov](https://codecov.io/gh/lastbyte32/go-metric/branch/iter3/graph/badge.svg?token=JGW4NDIJR0)](https://codecov.io/gh/lastbyte32/go-metric)
 
-# go-musthave-devops-tpl
 
+# Учебный проект на курсе «Продвинутый Go‑разработчик» в Яндекс.Практикум 
 
-# Обновление шаблона
-
-Чтобы получать обновления автотестов и других частей шаблона, выполните следующую команду:
-
-```
-git remote add -m main template https://github.com/yandex-praktikum/go-musthave-devops-tpl.git
-```
-
-Для обновления кода автотестов выполните команду:
-```
-git fetch template && git checkout template/main .github
-```
+## Сервис сбора метрик (разработка агента и серверной части) 
